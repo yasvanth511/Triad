@@ -22,6 +22,8 @@ public class ProfileService
             var user = await _db.Users
                 .Include(u => u.Photos)
                 .Include(u => u.Interests)
+                .Include(u => u.Couple)
+                    .ThenInclude(c => c!.Members)
                 .FirstOrDefaultAsync(u => u.Id == userId)
                 ?? throw new KeyNotFoundException("User not found.");
 
@@ -42,6 +44,45 @@ public class ProfileService
         }
     }
 
+    public async Task<UserProfileResponse> GetPublicProfileAsync(Guid viewerId, Guid userId)
+    {
+        using var activity = Telemetry.ActivitySource.StartActivity("profile.get_public");
+        activity?.SetTag("enduser.id", viewerId);
+        activity?.SetTag("triad.target_user.id", userId);
+
+        try
+        {
+            var isBlocked = await _db.Blocks.AnyAsync(b =>
+                (b.BlockerUserId == viewerId && b.BlockedUserId == userId) ||
+                (b.BlockerUserId == userId && b.BlockedUserId == viewerId));
+            if (isBlocked)
+                throw new KeyNotFoundException("User not found.");
+
+            var user = await _db.Users
+                .Include(u => u.Photos)
+                .Include(u => u.Interests)
+                .Include(u => u.Couple)
+                    .ThenInclude(c => c!.Members)
+                .FirstOrDefaultAsync(u => u.Id == userId && !u.IsBanned)
+                ?? throw new KeyNotFoundException("User not found.");
+
+            Telemetry.ProfileOperations.Add(1,
+                new KeyValuePair<string, object?>("operation", "get_public"),
+                new KeyValuePair<string, object?>("outcome", "success"));
+            Telemetry.MarkSuccess(activity);
+            return UserMapper.ToProfileResponse(user);
+        }
+        catch (Exception ex)
+        {
+            Telemetry.ProfileOperations.Add(1,
+                new KeyValuePair<string, object?>("operation", "get_public"),
+                new KeyValuePair<string, object?>("outcome", "error"),
+                new KeyValuePair<string, object?>("exception.type", ex.GetType().Name));
+            Telemetry.RecordException(activity, ex);
+            throw;
+        }
+    }
+
     public async Task<UserProfileResponse> UpdateProfileAsync(Guid userId, UpdateProfileRequest req)
     {
         using var activity = Telemetry.ActivitySource.StartActivity("profile.update");
@@ -52,6 +93,8 @@ public class ProfileService
             var user = await _db.Users
                 .Include(u => u.Photos)
                 .Include(u => u.Interests)
+                .Include(u => u.Couple)
+                    .ThenInclude(c => c!.Members)
                 .FirstOrDefaultAsync(u => u.Id == userId)
                 ?? throw new KeyNotFoundException("User not found.");
 
@@ -104,67 +147,72 @@ public class ProfileService
         }
     }
 
-    public async Task<PhotoResponse> AddPhotoAsync(Guid userId, string url)
+    public async Task DeleteAccountAsync(Guid userId)
     {
-        using var activity = Telemetry.ActivitySource.StartActivity("profile.add_photo");
+        using var activity = Telemetry.ActivitySource.StartActivity("profile.delete");
         activity?.SetTag("enduser.id", userId);
 
         try
         {
-            var photoCount = await _db.UserPhotos.CountAsync(p => p.UserId == userId);
-            if (photoCount >= AppConstants.MaxPhotos)
-                throw new InvalidOperationException($"Maximum {AppConstants.MaxPhotos} photos allowed.");
+            var user = await _db.Users.FindAsync(userId)
+                ?? throw new KeyNotFoundException("User not found.");
 
-            var photo = new UserPhoto
+            if (user.CoupleId.HasValue)
             {
-                UserId = userId,
-                Url = url,
-                SortOrder = photoCount
-            };
+                var couple = await _db.Couples
+                    .Include(c => c.Members)
+                    .FirstOrDefaultAsync(c => c.Id == user.CoupleId.Value);
 
-            _db.UserPhotos.Add(photo);
+                user.CoupleId = null;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                if (couple != null && couple.Members.Count <= 1)
+                {
+                    _db.Couples.Remove(couple);
+                }
+                else if (couple != null)
+                {
+                    couple.IsComplete = false;
+                }
+
+                await _db.SaveChangesAsync();
+            }
+
+            await _db.Database.ExecuteSqlInterpolatedAsync($"""
+                DELETE FROM "Messages"
+                WHERE "MatchId" IN (
+                    SELECT "Id"
+                    FROM "Matches"
+                    WHERE "User1Id" = {userId} OR "User2Id" = {userId}
+                )
+                """);
+
+            await _db.Database.ExecuteSqlInterpolatedAsync($"""
+                DELETE FROM "Matches"
+                WHERE "User1Id" = {userId} OR "User2Id" = {userId}
+                """);
+
+            _db.Users.Remove(user);
             await _db.SaveChangesAsync();
 
+            await _db.Database.ExecuteSqlRawAsync(@"
+                DELETE FROM ""Couples""
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM ""Users""
+                    WHERE ""Users"".""CoupleId"" = ""Couples"".""Id""
+                )
+            ");
+
             Telemetry.ProfileOperations.Add(1,
-                new KeyValuePair<string, object?>("operation", "add_photo"),
+                new KeyValuePair<string, object?>("operation", "delete"),
                 new KeyValuePair<string, object?>("outcome", "success"));
             Telemetry.MarkSuccess(activity);
-            return new PhotoResponse(photo.Id, photo.Url, photo.SortOrder);
         }
         catch (Exception ex)
         {
             Telemetry.ProfileOperations.Add(1,
-                new KeyValuePair<string, object?>("operation", "add_photo"),
-                new KeyValuePair<string, object?>("outcome", "error"),
-                new KeyValuePair<string, object?>("exception.type", ex.GetType().Name));
-            Telemetry.RecordException(activity, ex);
-            throw;
-        }
-    }
-
-    public async Task DeletePhotoAsync(Guid userId, Guid photoId)
-    {
-        using var activity = Telemetry.ActivitySource.StartActivity("profile.delete_photo");
-        activity?.SetTag("enduser.id", userId);
-        activity?.SetTag("triad.photo.id", photoId);
-
-        try
-        {
-            var photo = await _db.UserPhotos
-                .FirstOrDefaultAsync(p => p.Id == photoId && p.UserId == userId)
-                ?? throw new KeyNotFoundException("Photo not found.");
-
-            _db.UserPhotos.Remove(photo);
-            await _db.SaveChangesAsync();
-            Telemetry.ProfileOperations.Add(1,
-                new KeyValuePair<string, object?>("operation", "delete_photo"),
-                new KeyValuePair<string, object?>("outcome", "success"));
-            Telemetry.MarkSuccess(activity);
-        }
-        catch (Exception ex)
-        {
-            Telemetry.ProfileOperations.Add(1,
-                new KeyValuePair<string, object?>("operation", "delete_photo"),
+                new KeyValuePair<string, object?>("operation", "delete"),
                 new KeyValuePair<string, object?>("outcome", "error"),
                 new KeyValuePair<string, object?>("exception.type", ex.GetType().Name));
             Telemetry.RecordException(activity, ex);

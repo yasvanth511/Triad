@@ -9,13 +9,11 @@ namespace ThirdWheel.API.Controllers;
 public class ProfileController : BaseController
 {
     private readonly ProfileService _profileService;
-    private readonly ImageService _imageService;
     private readonly AntiSpamService _antiSpam;
 
-    public ProfileController(ProfileService profileService, ImageService imageService, AntiSpamService antiSpam)
+    public ProfileController(ProfileService profileService, AntiSpamService antiSpam)
     {
         _profileService = profileService;
-        _imageService = imageService;
         _antiSpam = antiSpam;
     }
 
@@ -24,6 +22,20 @@ public class ProfileController : BaseController
     {
         var profile = await _profileService.GetProfileAsync(GetUserId());
         return Ok(profile);
+    }
+
+    [HttpGet("{userId:guid}")]
+    public async Task<ActionResult<UserProfileResponse>> GetPublicProfile(Guid userId)
+    {
+        try
+        {
+            var profile = await _profileService.GetPublicProfileAsync(GetUserId(), userId);
+            return Ok(profile);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpPut]
@@ -41,40 +53,29 @@ public class ProfileController : BaseController
         }
     }
 
-    [HttpPost("photos")]
-    public async Task<ActionResult<PhotoResponse>> UploadPhoto(IFormFile file)
-    {
-        if (file.Length == 0 || file.Length > 5 * 1024 * 1024)
-            return BadRequest(new { error = "Photo must be between 1 byte and 5MB." });
-
-        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
-        if (!allowedTypes.Contains(file.ContentType))
-            return BadRequest(new { error = "Only JPEG, PNG, and WebP images are allowed." });
-
-        try
-        {
-            using var stream = file.OpenReadStream();
-            var url = await _imageService.SavePhotoAsync(stream, file.FileName);
-            var photo = await _profileService.AddPhotoAsync(GetUserId(), url);
-            return Ok(photo);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
-
-    [HttpDelete("photos/{photoId}")]
-    public async Task<IActionResult> DeletePhoto(Guid photoId)
+    [HttpDelete]
+    public async Task<IActionResult> DeleteProfile()
     {
         try
         {
-            await _profileService.DeletePhotoAsync(GetUserId(), photoId);
+            await _profileService.DeleteAccountAsync(GetUserId());
             return NoContent();
         }
         catch (KeyNotFoundException)
         {
             return NotFound();
         }
+    }
+
+    [HttpPost("photos")]
+    public ActionResult<PhotoResponse> UploadPhoto(IFormFile file)
+    {
+        return Conflict(new { error = "Custom profile photos are disabled. Triad now uses a shared default profile image." });
+    }
+
+    [HttpDelete("photos/{photoId}")]
+    public IActionResult DeletePhoto(Guid photoId)
+    {
+        return Conflict(new { error = "Custom profile photos are disabled. Triad now uses a shared default profile image." });
     }
 }

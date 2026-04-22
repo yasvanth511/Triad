@@ -13,6 +13,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using ThirdWheel.API;
 using ThirdWheel.API.Data;
+using ThirdWheel.API.Helpers;
 using ThirdWheel.API.Hubs;
 using ThirdWheel.API.Services;
 
@@ -90,11 +91,11 @@ builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<CoupleService>();
 builder.Services.AddScoped<DiscoveryService>();
 builder.Services.AddScoped<MatchingService>();
+builder.Services.AddScoped<SavedProfileService>();
 builder.Services.AddScoped<MessagingService>();
 builder.Services.AddScoped<SafetyService>();
 builder.Services.AddScoped<AntiSpamService>();
 builder.Services.AddScoped<EventService>();
-builder.Services.AddSingleton<ImageService>();
 
 // Controllers + SignalR
 builder.Services.AddControllers();
@@ -203,16 +204,6 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
-    // Stricter auth policy: 10 attempts / 60 s per IP (brute-force protection)
-    options.AddSlidingWindowLimiter("auth", o =>
-    {
-        o.PermitLimit = 10;
-        o.Window = TimeSpan.FromSeconds(60);
-        o.SegmentsPerWindow = 6;
-        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        o.QueueLimit = 0;
-    });
-
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
@@ -222,11 +213,56 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "ThirdWheel API v1");
+        options.DisplayRequestDuration();
+    });
+
     try
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
+
+        var users = await db.Users
+            .Include(u => u.Photos)
+            .ToListAsync();
+        var changed = false;
+
+        foreach (var user in users)
+        {
+            var orderedPhotos = user.Photos
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.CreatedAt)
+                .ToList();
+            var primaryPhoto = orderedPhotos.FirstOrDefault();
+
+            if (primaryPhoto == null)
+            {
+                db.UserPhotos.Add(DefaultProfilePhoto.Create(user.Id));
+                changed = true;
+                continue;
+            }
+
+            if (primaryPhoto.Url != DefaultProfilePhoto.DataUrl || primaryPhoto.SortOrder != 0)
+            {
+                primaryPhoto.Url = DefaultProfilePhoto.DataUrl;
+                primaryPhoto.SortOrder = 0;
+                changed = true;
+            }
+
+            if (orderedPhotos.Count > 1)
+            {
+                db.UserPhotos.RemoveRange(orderedPhotos.Skip(1));
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+        }
     }
     catch (Exception ex)
     {
@@ -252,9 +288,10 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads"
 });
 
-app.MapHealthChecks("/health", new HealthCheckOptions());
-// Apply auth-specific rate limit policy to auth endpoints
-app.MapControllers().RequireRateLimiting("auth");
+app.MapHealthChecks("/health", new HealthCheckOptions())
+    .WithTags("Health")
+    .WithOpenApi();
+app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

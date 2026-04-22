@@ -37,7 +37,16 @@ public class DiscoveryService
                 .Select(l => l.ToUserId)
                 .ToListAsync();
 
-            var excludeIds = blockedIds.Concat(likedIds).Append(userId).ToHashSet();
+            var savedIds = await _db.SavedProfiles
+                .Where(s => s.UserId == userId)
+                .Select(s => s.SavedUserId)
+                .ToListAsync();
+
+            var excludeIds = blockedIds
+                .Concat(likedIds)
+                .Concat(savedIds)
+                .Append(userId)
+                .ToHashSet();
 
             if (currentUser.CoupleId != null)
             {

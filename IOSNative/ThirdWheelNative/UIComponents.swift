@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ScreenContainer<Content: View>: View {
     let title: String
@@ -10,15 +11,9 @@ struct ScreenContainer<Content: View>: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(title)
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundStyle(BrandStyle.textPrimary)
-
-                        Text("Native iOS surface for the Third Wheel backend.")
-                            .font(.subheadline)
-                            .foregroundStyle(BrandStyle.textSecondary)
-                    }
+                    Text(title)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(BrandStyle.textPrimary)
 
                     content
                 }
@@ -67,23 +62,51 @@ struct RemoteMediaView: View {
     let path: String?
     let height: CGFloat
 
+    private var embeddedImage: UIImage? {
+        guard let path,
+              path.hasPrefix("data:"),
+              let commaIndex = path.firstIndex(of: ",") else {
+            return nil
+        }
+
+        let metadata = path[..<commaIndex]
+        guard metadata.contains(";base64") else {
+            return nil
+        }
+
+        let encoded = String(path[path.index(after: commaIndex)...])
+        guard let data = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) else {
+            return nil
+        }
+
+        return UIImage(data: data)
+    }
+
     private var url: URL? {
         AppConfig.shared.mediaURL(for: path)
     }
 
     var body: some View {
-        AsyncImage(url: url, transaction: Transaction(animation: .easeInOut(duration: 0.25))) { phase in
-            switch phase {
-            case let .success(image):
-                image
+        Group {
+            if let embeddedImage {
+                Image(uiImage: embeddedImage)
                     .resizable()
                     .scaledToFill()
-            case .empty:
-                placeholder(symbol: "photo.stack")
-            case .failure:
-                placeholder(symbol: "person.crop.square")
-            @unknown default:
-                placeholder(symbol: "sparkles.square.filled.on.square")
+            } else {
+                AsyncImage(url: url, transaction: Transaction(animation: .easeInOut(duration: 0.25))) { phase in
+                    switch phase {
+                    case let .success(image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .empty:
+                        placeholder(symbol: "photo.stack")
+                    case .failure:
+                        placeholder(symbol: "person.crop.square")
+                    @unknown default:
+                        placeholder(symbol: "sparkles.square.filled.on.square")
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity)
@@ -110,3 +133,24 @@ struct RemoteMediaView: View {
     }
 }
 
+struct DiscoverActionButton: View {
+    let symbol: String
+    let tint: Color
+    let background: Color
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 24, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 62, height: 62)
+            .background(
+                Circle()
+                    .fill(background)
+            )
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.55), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 8)
+    }
+}

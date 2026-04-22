@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<UserInterest> UserInterests => Set<UserInterest>();
     public DbSet<Couple> Couples => Set<Couple>();
     public DbSet<Like> Likes => Set<Like>();
+    public DbSet<SavedProfile> SavedProfiles => Set<SavedProfile>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Block> Blocks => Set<Block>();
@@ -38,6 +39,9 @@ public class AppDbContext : DbContext
         // Photos
         modelBuilder.Entity<UserPhoto>(e =>
         {
+            e.Property(p => p.Url)
+                .HasColumnType("text");
+
             e.HasOne(p => p.User)
                 .WithMany(u => u.Photos)
                 .HasForeignKey(p => p.UserId)
@@ -67,6 +71,22 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(l => new { l.FromUserId, l.ToUserId }).IsUnique();
+        });
+
+        // Saved Profiles
+        modelBuilder.Entity<SavedProfile>(e =>
+        {
+            e.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(s => s.SavedUser)
+                .WithMany()
+                .HasForeignKey(s => s.SavedUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(s => new { s.UserId, s.SavedUserId }).IsUnique();
         });
 
         // Match

@@ -16,6 +16,7 @@ struct UserProfile: Codable, Identifiable {
     let state: String
     let zipCode: String
     let radiusMiles: Int?
+    let couplePartnerName: String?
 }
 
 struct Photo: Codable, Identifiable {
@@ -40,6 +41,21 @@ struct LoginRequest: Encodable {
     let password: String
 }
 
+struct UpdateProfileRequest: Encodable {
+    let bio: String?
+    let ageMin: Int?
+    let ageMax: Int?
+    let intent: String?
+    let lookingFor: String?
+    let interests: [String]?
+    let latitude: Double?
+    let longitude: Double?
+    let city: String?
+    let state: String?
+    let zipCode: String?
+    let radiusMiles: Int?
+}
+
 struct DiscoveryCard: Codable, Identifiable {
     let userId: UUID
     let username: String
@@ -54,6 +70,25 @@ struct DiscoveryCard: Codable, Identifiable {
     let approximateDistanceKm: Double?
     let city: String
     let state: String
+
+    var id: UUID { userId }
+}
+
+struct SavedProfileItem: Codable, Identifiable {
+    let userId: UUID
+    let username: String
+    let bio: String
+    let ageMin: Int
+    let ageMax: Int
+    let intent: String
+    let lookingFor: String
+    let interests: [String]
+    let photos: [Photo]
+    let isCouple: Bool
+    let approximateDistanceKm: Double?
+    let city: String
+    let state: String
+    let savedAt: Date
 
     var id: UUID { userId }
 }
@@ -76,6 +111,20 @@ struct ParticipantInfo: Codable, Identifiable {
     let coupleId: UUID?
 
     var id: UUID { userId }
+}
+
+struct MessageItem: Codable, Identifiable {
+    let id: UUID
+    let senderId: UUID
+    let senderUsername: String
+    let senderPhotoUrl: String?
+    let content: String
+    let sentAt: Date
+    let isRead: Bool
+}
+
+struct SendMessageRequest: Encodable {
+    let content: String
 }
 
 struct EventItem: Codable, Identifiable {
@@ -101,6 +150,20 @@ struct EventInterestToggleResponse: Codable {
 
 struct LikeRequest: Encodable {
     let targetUserId: UUID
+}
+
+struct SaveProfileRequest: Encodable {
+    let targetUserId: UUID
+}
+
+struct BlockUserRequest: Encodable {
+    let userId: UUID
+}
+
+struct ReportUserRequest: Encodable {
+    let userId: UUID
+    let reason: String
+    let details: String?
 }
 
 struct LikeResult: Codable {
@@ -149,4 +212,3 @@ extension ISO8601DateFormatter {
         return formatter
     }()
 }
-

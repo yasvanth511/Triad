@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Third Wheel Native</string>
+	<string>Triad</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,11 +32,11 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Allow Third Wheel Native to use your location for nearby discovery and events.</string>
+	<string>Allow Triad to use your location for nearby discovery and events.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Allow Third Wheel Native to save edited profile photos.</string>
+	<string>Allow Triad to save edited profile photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Allow Third Wheel Native to read your photos for profile uploads.</string>
+	<string>Allow Triad to read your photos for profile uploads.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -50,4 +50,3 @@
 	</array>
 </dict>
 </plist>
-

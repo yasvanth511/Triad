@@ -52,6 +52,11 @@ public class MatchingService
                 ToCoupleId = toUser.CoupleId
             };
 
+            var existingSave = await _db.SavedProfiles
+                .FirstOrDefaultAsync(s => s.UserId == fromUserId && s.SavedUserId == toUserId);
+            if (existingSave != null)
+                _db.SavedProfiles.Remove(existingSave);
+
             _db.Likes.Add(like);
             await _db.SaveChangesAsync();
 

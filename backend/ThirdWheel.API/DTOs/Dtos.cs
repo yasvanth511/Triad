@@ -47,7 +47,8 @@ public record UserProfileResponse(
     string City,
     string State,
     string ZipCode,
-    int? RadiusMiles
+    int? RadiusMiles,
+    string? CouplePartnerName
 );
 
 public record PhotoResponse(Guid Id, string Url, int SortOrder);
@@ -78,6 +79,26 @@ public record DiscoveryFilterRequest(
     double? MaxDistanceKm,
     int Skip = 0,
     int Take = 20
+);
+
+// Saved Profiles
+public record SaveProfileRequest(Guid TargetUserId);
+
+public record SavedProfileResponse(
+    Guid UserId,
+    string Username,
+    string Bio,
+    int AgeMin,
+    int AgeMax,
+    string Intent,
+    string LookingFor,
+    List<string> Interests,
+    List<PhotoResponse> Photos,
+    bool IsCouple,
+    double? ApproximateDistanceKm,
+    string City,
+    string State,
+    DateTime SavedAt
 );
 
 // Like / Match

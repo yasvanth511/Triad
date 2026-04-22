@@ -128,12 +128,13 @@ public class EventService
 
         try
         {
+            var eventDateUtc = NormalizeToUtc(req.EventDate);
             var ev = new Event
             {
                 Title = req.Title,
                 Description = req.Description,
                 BannerUrl = req.BannerUrl,
-                EventDate = req.EventDate,
+                EventDate = eventDateUtc,
                 Latitude = req.Latitude,
                 Longitude = req.Longitude,
                 City = req.City ?? string.Empty,
@@ -226,6 +227,16 @@ public class EventService
             Telemetry.RecordException(activity, ex);
             throw;
         }
+    }
+
+    private static DateTime NormalizeToUtc(DateTime value)
+    {
+        return value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
     }
 
 }

@@ -34,23 +34,26 @@ struct AuthView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 18) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Third Wheel")
-                                .font(.system(size: 38, weight: .bold, design: .rounded))
-                                .foregroundStyle(BrandStyle.textPrimary)
-
-                            Text("A native SwiftUI client for the same Triad backend.")
-                                .font(.subheadline)
-                                .foregroundStyle(BrandStyle.textSecondary)
-
-                            HStack(spacing: 10) {
-                                SectionBadge(text: "SwiftUI", color: BrandStyle.accent)
-                                SectionBadge(text: "Keychain", color: BrandStyle.secondary)
-                                SectionBadge(text: "CoreLocation", color: .blue)
-                            }
+                        VStack(spacing: 0) {
+                            Text("Triad")
+                                .font(.system(size: 66, weight: .black, design: .serif))
+                                .kerning(-1.6)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 0.18, green: 0.11, blue: 0.29),
+                                            Color(red: 0.34, green: 0.16, blue: 0.46)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .shadow(color: .white.opacity(0.55), radius: 18, x: 0, y: 6)
+                                .shadow(color: BrandStyle.secondary.opacity(0.16), radius: 26, x: 0, y: 12)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .triadCard()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 18)
+                        .padding(.bottom, 6)
 
                         VStack(alignment: .leading, spacing: 16) {
                             Picker("Mode", selection: $mode) {
@@ -151,4 +154,3 @@ struct AuthView: View {
         }
     }
 }
-

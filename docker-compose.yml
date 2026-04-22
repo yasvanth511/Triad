@@ -4,7 +4,9 @@ services:
       context: ./backend/ThirdWheel.API
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5127:5000"
+    volumes:
+      - api_uploads:/app/uploads
     networks:
       - ipv6net
     environment:
@@ -21,3 +23,6 @@ networks:
     ipam:
       config:
         - subnet: "fd00:dead:beef::/48"
+
+volumes:
+  api_uploads:

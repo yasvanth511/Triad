@@ -304,7 +304,7 @@ Connect to `/hubs/chat` with JWT token: `?access_token={token}`
 docker compose up -d
 ```
 
-This starts the API on port **5000** with the configured PostgreSQL connection.
+This starts the API on port **5127** with the configured PostgreSQL connection.
 
 #### Option B: Manual
 
@@ -392,7 +392,7 @@ services:
       context: ./backend/ThirdWheel.API
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5127:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=<your-connection-string>

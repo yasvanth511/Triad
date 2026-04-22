@@ -41,6 +41,8 @@ public class AuthService
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password)
             };
 
+            user.Photos.Add(DefaultProfilePhoto.Create(user.Id));
+
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
@@ -71,6 +73,8 @@ public class AuthService
             var user = await _db.Users
                 .Include(u => u.Photos)
                 .Include(u => u.Interests)
+                .Include(u => u.Couple)
+                    .ThenInclude(c => c!.Members)
                 .FirstOrDefaultAsync(u => u.Email == req.Email.ToLowerInvariant());
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))

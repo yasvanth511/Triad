@@ -15,8 +15,12 @@ enum KeychainStoreError: LocalizedError {
 final class KeychainTokenStore {
     private let service = "com.thirdwheel.iosnative.auth"
     private let account = "session-token"
+    private let simulatorDefaultsKey = "com.thirdwheel.iosnative.auth.session-token"
 
     func loadToken() -> String? {
+        #if targetEnvironment(simulator)
+        return UserDefaults.standard.string(forKey: simulatorDefaultsKey)
+        #else
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -39,9 +43,15 @@ final class KeychainTokenStore {
         }
 
         return token
+        #endif
     }
 
     func saveToken(_ token: String) throws {
+        #if targetEnvironment(simulator)
+        // Unsigned simulator builds do not reliably persist Keychain items.
+        UserDefaults.standard.set(token, forKey: simulatorDefaultsKey)
+        return
+        #else
         deleteToken()
 
         let data = Data(token.utf8)
@@ -56,9 +66,13 @@ final class KeychainTokenStore {
         guard status == errSecSuccess else {
             throw KeychainStoreError.saveFailed(status)
         }
+        #endif
     }
 
     func deleteToken() {
+        UserDefaults.standard.removeObject(forKey: simulatorDefaultsKey)
+
+        #if !targetEnvironment(simulator)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -66,6 +80,6 @@ final class KeychainTokenStore {
         ]
 
         SecItemDelete(query as CFDictionary)
+        #endif
     }
 }
-

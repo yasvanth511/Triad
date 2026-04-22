@@ -40,6 +40,11 @@ final class APIClient {
         return try await perform(request)
     }
 
+    func put<T: Decodable, Body: Encodable>(_ path: String, body: Body) async throws -> T {
+        let request = try makeRequest(path: path, method: "PUT", body: body)
+        return try await perform(request)
+    }
+
     func delete(_ path: String) async throws {
         let request = try makeRequest(path: path, method: "DELETE")
         _ = try await perform(request) as EmptyResponse

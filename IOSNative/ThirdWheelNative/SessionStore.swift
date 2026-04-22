@@ -49,7 +49,7 @@ final class SessionStore: ObservableObject {
                 "auth/login",
                 body: LoginRequest(email: email, password: password)
             )
-            try persistSession(response)
+            persistSession(response)
         } catch {
             lastErrorMessage = error.localizedDescription
         }
@@ -65,7 +65,7 @@ final class SessionStore: ObservableObject {
                 "auth/register",
                 body: RegisterRequest(username: username, email: email, password: password)
             )
-            try persistSession(response)
+            persistSession(response)
         } catch {
             lastErrorMessage = error.localizedDescription
         }
@@ -86,6 +86,21 @@ final class SessionStore: ObservableObject {
         }
     }
 
+    func loadProfile(userId: UUID) async throws -> UserProfile {
+        try await client.get("profile/\(userId.uuidString.lowercased())")
+    }
+
+    func updateProfile(_ request: UpdateProfileRequest) async throws -> UserProfile {
+        let updated: UserProfile = try await client.put("profile", body: request)
+        currentUser = updated
+        return updated
+    }
+
+    func deleteAccount() async throws {
+        try await client.delete("profile")
+        signOut()
+    }
+
     func loadDiscovery(userType: String?) async throws -> [DiscoveryCard] {
         var queryItems = [
             URLQueryItem(name: "skip", value: "0"),
@@ -103,8 +118,50 @@ final class SessionStore: ObservableObject {
         try await client.post("match/like", body: LikeRequest(targetUserId: userId))
     }
 
+    func saveProfile(userId: UUID) async throws {
+        let _: EmptyResponse = try await client.post("saved", body: SaveProfileRequest(targetUserId: userId))
+    }
+
+    func loadSavedProfiles() async throws -> [SavedProfileItem] {
+        try await client.get("saved")
+    }
+
+    func removeSavedProfile(userId: UUID) async throws {
+        try await client.delete("saved/\(userId.uuidString.lowercased())")
+    }
+
+    func block(userId: UUID) async throws {
+        let _: EmptyResponse = try await client.post("safety/block", body: BlockUserRequest(userId: userId))
+    }
+
+    func report(userId: UUID, reason: String, details: String?) async throws {
+        let request = ReportUserRequest(
+            userId: userId,
+            reason: reason,
+            details: details
+        )
+        let _: EmptyResponse = try await client.post("safety/report", body: request)
+    }
+
     func loadMatches() async throws -> [MatchItem] {
         try await client.get("match")
+    }
+
+    func loadMessages(matchId: UUID, skip: Int = 0, take: Int = 50) async throws -> [MessageItem] {
+        try await client.get(
+            "message/\(matchId.uuidString.lowercased())",
+            queryItems: [
+                URLQueryItem(name: "skip", value: String(skip)),
+                URLQueryItem(name: "take", value: String(take))
+            ]
+        )
+    }
+
+    func sendMessage(matchId: UUID, content: String) async throws -> MessageItem {
+        try await client.post(
+            "message/\(matchId.uuidString.lowercased())",
+            body: SendMessageRequest(content: content)
+        )
     }
 
     func loadEvents() async throws -> [EventItem] {
@@ -123,13 +180,18 @@ final class SessionStore: ObservableObject {
         lastErrorMessage = error.localizedDescription
     }
 
-    private func persistSession(_ response: AuthResponse) throws {
-        try tokenStore.saveToken(response.token)
+    private func persistSession(_ response: AuthResponse) {
         client.authToken = response.token
         currentUser = response.user
         phase = .authenticated
+        lastErrorMessage = nil
+
+        do {
+            try tokenStore.saveToken(response.token)
+        } catch {
+            lastErrorMessage = "Signed in, but the session could not be saved for next launch. \(error.localizedDescription)"
+        }
     }
 }
 
 struct EmptyRequest: Encodable {}
-

@@ -55,6 +55,13 @@ struct MainTabView: View {
             }
 
             NavigationStack {
+                SavedProfilesView()
+            }
+            .tabItem {
+                Label("Saved", systemImage: "bookmark")
+            }
+
+            NavigationStack {
                 MatchesView()
             }
             .tabItem {

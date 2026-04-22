@@ -44,6 +44,12 @@ struct AppConfig {
             return absolute
         }
 
-        return URL(string: path, relativeTo: originBaseURL)
+        let normalizedPath = path.hasPrefix("/") ? path : "/\(path)"
+        guard var components = URLComponents(url: originBaseURL, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+
+        components.path = normalizedPath
+        return components.url
     }
 }
