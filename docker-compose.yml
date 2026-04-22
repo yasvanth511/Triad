@@ -1,0 +1,23 @@
+services:
+  api:
+    build:
+      context: ./backend/ThirdWheel.API
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - ipv6net
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db.nikvmewjpkgxindstiro.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=triad@xops.com;SSL Mode=Require;Trust Server Certificate=true
+      - Jwt__Key=CHANGE-THIS-TO-A-SECURE-KEY-AT-LEAST-32-CHARS-LONG!!
+      - Jwt__Issuer=ThirdWheel.API
+      - Jwt__Audience=ThirdWheel.Mobile
+
+networks:
+  ipv6net:
+    enable_ipv6: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "fd00:dead:beef::/48"

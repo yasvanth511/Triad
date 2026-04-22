@@ -1,0 +1,317 @@
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, Stack, router } from "expo-router";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { api } from "../../src/services/api";
+import {
+  joinMatch,
+  leaveMatch,
+  onMessage,
+  offMessage,
+  onMessageError,
+  sendRealtimeMessage,
+} from "../../src/services/signalr";
+import { COLORS, FONTS, SPACING, RADIUS } from "../../src/constants";
+import type { Message } from "../../src/types";
+
+export default function ChatScreen() {
+  const { matchId, name } = useLocalSearchParams<{
+    matchId: string;
+    name: string;
+  }>();
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
+
+  const loadMessages = useCallback(async () => {
+    if (!matchId) return;
+    setLoading(true);
+    try {
+      const data = await api.get<Message[]>(`/message/${matchId}`);
+      setMessages(data);
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  }, [matchId]);
+
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+
+  useEffect(() => {
+    if (!matchId) return;
+
+    joinMatch(matchId).catch(() => {});
+
+    const handler = (msg: Message) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+
+    const errorHandler = (error: string) => {
+      Alert.alert("Message Error", error);
+    };
+
+    onMessage(handler);
+    onMessageError(errorHandler);
+
+    return () => {
+      offMessage(handler);
+      leaveMatch(matchId).catch(() => {});
+    };
+  }, [matchId]);
+
+  async function handleSend() {
+    if (!text.trim() || !matchId) return;
+    const content = text.trim();
+    setText("");
+    setSending(true);
+
+    try {
+      await sendRealtimeMessage(matchId, content);
+    } catch {
+      try {
+        const msg = await api.post<Message>(`/message/${matchId}`, { content });
+        setMessages((prev) => [...prev, msg]);
+      } catch (e: any) {
+        Alert.alert("Error", e.message);
+        setText(content);
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function handleReport() {
+    Alert.alert("Report User", "Are you sure you want to report this user?", [
+      { text: "Cancel" },
+      {
+        text: "Report",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert("Reported", "Your report has been submitted.");
+        },
+      },
+    ]);
+  }
+
+  function handleBlock() {
+    Alert.alert("Block User", "This will also unmatch. Are you sure?", [
+      { text: "Cancel" },
+      {
+        text: "Block",
+        style: "destructive",
+        onPress: async () => {
+          Alert.alert("Blocked", "User has been blocked.");
+          router.back();
+        },
+      },
+    ]);
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={90}
+    >
+      <Stack.Screen
+        options={{
+          title: name || "Chat",
+          headerStyle: { backgroundColor: COLORS.background },
+          headerTintColor: COLORS.text,
+          headerShadowVisible: false,
+          headerRight: () => (
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={handleReport} hitSlop={8}>
+                <Ionicons name="flag-outline" size={20} color={COLORS.textTertiary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleBlock} hitSlop={8}>
+                <Ionicons name="ban-outline" size={20} color={COLORS.error} />
+              </TouchableOpacity>
+            </View>
+          ),
+        }}
+      />
+
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.messageList}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
+          renderItem={({ item }) => {
+            const isMe = item.senderId === user?.id;
+            return (
+              <View
+                style={[
+                  styles.bubble,
+                  isMe ? styles.myBubble : styles.theirBubble,
+                ]}
+              >
+                <Text style={[styles.bubbleText, !isMe && styles.theirText]}>
+                  {item.content}
+                </Text>
+                <Text style={[styles.bubbleTime, !isMe && styles.theirTime]}>
+                  {new Date(item.sentAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {isMe && item.isRead && " ✓"}
+                </Text>
+              </View>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.center}>
+              <Text style={styles.emptyText}>Say hello!</Text>
+            </View>
+          }
+        />
+      )}
+
+      {/* Input bar */}
+      <View style={styles.inputBar}>
+        <TextInput
+          style={styles.input}
+          value={text}
+          onChangeText={setText}
+          placeholder="Message..."
+          placeholderTextColor={COLORS.textTertiary}
+          maxLength={2000}
+          multiline
+        />
+        <TouchableOpacity
+          style={[styles.sendBtn, (!text.trim() || sending) && styles.sendDisabled]}
+          onPress={handleSend}
+          disabled={!text.trim() || sending}
+        >
+          <Ionicons name="arrow-up" size={20} color={COLORS.white} />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: SPACING.md,
+    marginRight: SPACING.sm,
+  },
+  messageList: {
+    padding: SPACING.md,
+    paddingBottom: SPACING.sm,
+    flexGrow: 1,
+    justifyContent: "flex-end",
+  },
+
+  // Bubbles
+  bubble: {
+    maxWidth: "78%",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.sm,
+  },
+  myBubble: {
+    backgroundColor: COLORS.primary,
+    alignSelf: "flex-end",
+    borderBottomRightRadius: SPACING.xs,
+  },
+  theirBubble: {
+    backgroundColor: COLORS.surface,
+    alignSelf: "flex-start",
+    borderBottomLeftRadius: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  bubbleText: {
+    color: COLORS.white,
+    fontSize: FONTS.regular,
+    lineHeight: 22,
+  },
+  theirText: {
+    color: COLORS.text,
+  },
+  bubbleTime: {
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: "right",
+  },
+  theirTime: {
+    color: COLORS.textTertiary,
+  },
+  emptyText: {
+    color: COLORS.textTertiary,
+    fontSize: FONTS.large,
+  },
+
+  // Input bar
+  inputBar: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.background,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    color: COLORS.text,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    maxHeight: 100,
+    fontSize: FONTS.regular,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sendDisabled: {
+    opacity: 0.35,
+  },
+});

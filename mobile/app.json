@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Third Wheel",
+    "slug": "thirdwheel",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "thirdwheel",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.thirdwheel.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.thirdwheel.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Third Wheel to access your photos to add profile pictures."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Third Wheel to use your location for finding nearby people."
+        }
+      ],
+      "expo-asset"
+    ]
+  }
+}

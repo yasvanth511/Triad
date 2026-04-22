@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.expo/
+dist/
+
+# Backend
+backend/**/bin/
+backend/**/obj/
+backend/**/uploads/
+backend/**/.vs/
+backend/**/*.user
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Docker
+pgdata/
