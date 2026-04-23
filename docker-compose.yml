@@ -1,20 +1,29 @@
 services:
   api:
+    image: ${DOCKER_IMAGE_NAME:-triad-api}:${DOCKER_IMAGE_TAG:-dev}
     build:
       context: ./backend/ThirdWheel.API
       dockerfile: Dockerfile
     ports:
-      - "5127:5000"
+      - "${API_PORT:-5127}:5000"
+    env_file:
+      - ${DOCKER_ENV_FILE:-.env.docker}
     volumes:
       - api_uploads:/app/uploads
     networks:
       - ipv6net
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db.nikvmewjpkgxindstiro.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=triad@xops.com;SSL Mode=Require;Trust Server Certificate=true
-      - Jwt__Key=CHANGE-THIS-TO-A-SECURE-KEY-AT-LEAST-32-CHARS-LONG!!
-      - Jwt__Issuer=ThirdWheel.API
-      - Jwt__Audience=ThirdWheel.Mobile
+
+  admin:
+    image: ${ADMIN_IMAGE_NAME:-triad-admin}:${ADMIN_IMAGE_TAG:-dev}
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "${ADMIN_PORT:-5173}:80"
+    networks:
+      - ipv6net
 
 networks:
   ipv6net:

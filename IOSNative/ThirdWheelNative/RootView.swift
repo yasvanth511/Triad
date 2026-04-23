@@ -50,18 +50,16 @@ struct MainTabView: View {
 
     enum Tab: Hashable { case discover, saved, matches, impressMe, events }
 
-    enum ExtraScreen: String, Identifiable {
-        case profile
-        var id: String { rawValue }
-    }
-
     @State private var selectedTab: Tab = .discover
     @State private var showMoreMenu = false
-    @State private var extraScreen: ExtraScreen?
 
     private let tabBarContentHeight: CGFloat = 56
 
     private var notificationBadgeCount: Int {
+        session.notificationUnreadCount
+    }
+
+    private var impressMeBadgeCount: Int {
         session.impressMeSummary.totalBadgeCount
     }
 
@@ -117,10 +115,6 @@ struct MainTabView: View {
             customTabBar
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.72), value: showMoreMenu)
-        .sheet(item: $extraScreen) { _ in
-            NavigationStack { ProfileView() }
-                .environmentObject(session)
-        }
         .tint(BrandStyle.accent)
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
@@ -144,6 +138,7 @@ struct MainTabView: View {
 
     private func refreshImpressMeSummary() async {
         _ = try? await session.loadImpressMeSummary()
+        await session.refreshNotificationCount()
     }
 
     private var safeAreaBottomInset: CGFloat {
@@ -169,11 +164,12 @@ struct MainTabView: View {
             }
             .buttonStyle(.plain)
 
-            Button {
-                extraScreen = .profile
+            NavigationLink {
+                ProfileView()
             } label: {
                 toolbarIcon(symbol: "person.crop.circle.fill")
             }
+            .buttonStyle(.plain)
         }
     }
 
@@ -232,7 +228,7 @@ struct MainTabView: View {
             tabBarButton(icon: "sparkles",        label: "Discover", tab: .discover)
             tabBarButton(icon: "bookmark",         label: "Saved",    tab: .saved)
             tabBarButton(icon: "heart.text.square",label: "Matches",  tab: .matches)
-            tabBarButton(icon: "bolt.heart",       label: "Impress",  tab: .impressMe, badgeCount: notificationBadgeCount)
+            tabBarButton(icon: "bolt.heart",       label: "Impress",  tab: .impressMe, badgeCount: impressMeBadgeCount)
             moreTabButton
         }
         .frame(height: tabBarContentHeight)
@@ -302,143 +298,66 @@ struct MainTabView: View {
 private struct NotificationsView: View {
     @EnvironmentObject private var session: SessionStore
 
-    @State private var inbox: ImpressMeInbox?
+    @State private var notifications: [AppNotification] = []
+    @State private var unreadCount: Int = 0
     @State private var isLoading = false
-    @State private var reviewingSignal: ImpressMeSignal?
-
-    private var receivedChallenges: [ImpressMeSignal] {
-        (inbox?.received ?? [])
-            .filter { $0.status == .sent && !$0.isExpired }
-            .sorted { notificationDate(for: $0) > notificationDate(for: $1) }
-    }
-
-    private var answersReady: [ImpressMeSignal] {
-        (inbox?.sent ?? [])
-            .filter { $0.status == .responded || $0.status == .viewed }
-            .sorted { notificationDate(for: $0) > notificationDate(for: $1) }
-    }
-
-    private var recentResults: [ImpressMeSignal] {
-        let receivedResults = (inbox?.received ?? [])
-            .filter { $0.status == .accepted || $0.status == .declined || $0.status == .expired }
-        let sentExpired = (inbox?.sent ?? [])
-            .filter { $0.status == .expired }
-
-        return (receivedResults + sentExpired)
-            .sorted { notificationDate(for: $0) > notificationDate(for: $1) }
-    }
 
     var body: some View {
         ScreenContainer(title: "Notifications") {
-            if isLoading, inbox == nil {
+            if isLoading, notifications.isEmpty {
                 ProgressView("Loading notifications...")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            summaryStrip
+            if !notifications.isEmpty {
+                summaryStrip
+            }
 
-            if receivedChallenges.isEmpty, answersReady.isEmpty, recentResults.isEmpty, !isLoading {
+            if notifications.isEmpty, !isLoading {
                 EmptyStateCard(
                     title: "All caught up",
-                    message: "New Impress Me challenges, answers, and updates will appear here."
+                    message: "Likes, matches, messages, and Impress Me challenges will appear here."
                 )
             } else {
-                if !receivedChallenges.isEmpty {
-                    notificationSectionHeader(
-                        title: "New Challenges",
-                        subtitle: "People waiting for your answer.",
-                        count: receivedChallenges.count
-                    )
-
-                    ForEach(receivedChallenges) { signal in
-                        NavigationLink {
-                            ProfileDetailView(
-                                userId: signal.senderId,
-                                fallbackName: signal.senderUsername,
-                                receivedImpressMeSignalId: signal.id,
-                                onImpressMeSignalUpdated: { updated in
-                                    applyUpdate(updated)
-                                }
-                            )
-                        } label: {
-                            notificationRow(
-                                icon: "sparkles.rectangle.stack.fill",
-                                tint: BrandStyle.accent,
-                                title: "\(signal.senderUsername) sent you an Impress Me challenge",
-                                subtitle: signal.prompt.promptText,
-                                timestamp: signal.createdAt,
-                                statusText: "Reply"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                if !answersReady.isEmpty {
-                    notificationSectionHeader(
-                        title: "Answers Ready",
-                        subtitle: "Review the replies waiting on you.",
-                        count: answersReady.count
-                    )
-
-                    ForEach(answersReady) { signal in
-                        Button {
-                            reviewingSignal = signal
-                        } label: {
-                            notificationRow(
-                                icon: "bubble.left.and.text.bubble.right.fill",
-                                tint: BrandStyle.secondary,
-                                title: "\(signal.receiverUsername) answered your challenge",
-                                subtitle: signal.response?.textContent ?? "Tap to review their answer.",
-                                timestamp: signal.respondedAt ?? signal.createdAt,
-                                statusText: "Review"
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                if !recentResults.isEmpty {
-                    notificationSectionHeader(
-                        title: "Recent Updates",
-                        subtitle: "The latest outcomes from your Impress Me activity."
-                    )
-
-                    ForEach(recentResults) { signal in
-                        resultRow(for: signal)
-                    }
+                ForEach(notifications) { notification in
+                    notificationRow(for: notification)
                 }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if unreadCount > 0 {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Mark all read") {
+                        Task { await markAllRead() }
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(BrandStyle.accent)
+                }
+            }
+        }
         .task {
             await load()
         }
         .refreshable {
             await load()
         }
-        .sheet(item: $reviewingSignal) { signal in
-            ImpressMeReviewView(signal: signal) { updated in
-                applyUpdate(updated)
-                reviewingSignal = nil
-            }
-            .environmentObject(session)
-        }
     }
+
+    // MARK: – Summary strip
 
     private var summaryStrip: some View {
         HStack(spacing: 12) {
             notificationSummaryCard(
-                title: "New",
-                value: "\(receivedChallenges.count)",
-                subtitle: "Challenges",
+                title: "Unread",
+                value: "\(unreadCount)",
+                subtitle: "Notifications",
                 tint: BrandStyle.accent
             )
-
             notificationSummaryCard(
-                title: "Ready",
-                value: "\(answersReady.count)",
-                subtitle: "To review",
+                title: "Total",
+                value: "\(notifications.count)",
+                subtitle: "Recent",
                 tint: BrandStyle.secondary
             )
         }
@@ -464,43 +383,76 @@ private struct NotificationsView: View {
         )
     }
 
-    private func notificationSectionHeader(title: String, subtitle: String, count: Int? = nil) -> some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(BrandStyle.textPrimary)
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(BrandStyle.textSecondary)
-            }
+    // MARK: – Row builder
 
-            Spacer()
+    @ViewBuilder
+    private func notificationRow(for notification: AppNotification) -> some View {
+        let (icon, tint, statusText) = appearance(for: notification.type)
 
-            if let count, count > 0 {
-                SectionBadge(text: "\(count)", color: BrandStyle.accent)
+        Group {
+            switch notification.type {
+            case .likeReceived:
+                if let actorId = notification.actorId {
+                    NavigationLink {
+                        ProfileDetailView(userId: actorId, fallbackName: notification.actorName ?? "Someone")
+                    } label: {
+                        rowContent(notification: notification, icon: icon, tint: tint, statusText: statusText)
+                    }
+                    .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { markRead(notification) })
+                } else {
+                    rowContent(notification: notification, icon: icon, tint: tint, statusText: statusText)
+                }
+
+            case .impressMeReceived:
+                if let actorId = notification.actorId {
+                    NavigationLink {
+                        ProfileDetailView(
+                            userId: actorId,
+                            fallbackName: notification.actorName ?? "Someone",
+                            receivedImpressMeSignalId: notification.referenceId
+                        )
+                    } label: {
+                        rowContent(notification: notification, icon: icon, tint: tint, statusText: statusText)
+                    }
+                    .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded { markRead(notification) })
+                } else {
+                    rowContent(notification: notification, icon: icon, tint: tint, statusText: statusText)
+                }
+
+            default:
+                rowContent(notification: notification, icon: icon, tint: tint, statusText: statusText)
             }
         }
+        .opacity(notification.isRead ? 0.6 : 1)
     }
 
-    private func notificationRow(
+    private func rowContent(
+        notification: AppNotification,
         icon: String,
         tint: Color,
-        title: String,
-        subtitle: String,
-        timestamp: Date,
-        statusText: String? = nil
+        statusText: String?
     ) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(tint)
-                .frame(width: 38, height: 38)
-                .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 38, height: 38)
+                    .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                if !notification.isRead {
+                    Circle()
+                        .fill(BrandStyle.secondary)
+                        .frame(width: 8, height: 8)
+                        .offset(x: 3, y: -3)
+                }
+            }
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top, spacing: 8) {
-                    Text(title)
+                    Text(notification.title)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(BrandStyle.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -512,12 +464,12 @@ private struct NotificationsView: View {
                     }
                 }
 
-                Text(subtitle)
+                Text(notification.body)
                     .font(.subheadline)
                     .foregroundStyle(BrandStyle.textSecondary)
                     .lineLimit(2)
 
-                Text(timestamp.formatted(date: .abbreviated, time: .shortened))
+                Text(notification.createdAt.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(BrandStyle.textSecondary)
             }
@@ -526,69 +478,50 @@ private struct NotificationsView: View {
         .triadCard()
     }
 
-    @ViewBuilder
-    private func resultRow(for signal: ImpressMeSignal) -> some View {
-        switch signal.status {
-        case .accepted:
-            NavigationLink {
-                ProfileDetailView(
-                    userId: signal.senderId,
-                    fallbackName: signal.senderUsername,
-                    receivedImpressMeSignalId: signal.id,
-                    onImpressMeSignalUpdated: { updated in
-                        applyUpdate(updated)
-                    }
-                )
-            } label: {
-                notificationRow(
-                    icon: "checkmark.seal.fill",
-                    tint: .green,
-                    title: "\(signal.senderUsername) accepted your answer",
-                    subtitle: "The challenge turned into a match.",
-                    timestamp: signal.resolvedAt ?? signal.respondedAt ?? signal.createdAt,
-                    statusText: "Matched"
-                )
-            }
-            .buttonStyle(.plain)
-        case .declined:
-            NavigationLink {
-                ProfileDetailView(
-                    userId: signal.senderId,
-                    fallbackName: signal.senderUsername,
-                    receivedImpressMeSignalId: signal.id,
-                    onImpressMeSignalUpdated: { updated in
-                        applyUpdate(updated)
-                    }
-                )
-            } label: {
-                notificationRow(
-                    icon: "xmark.circle.fill",
-                    tint: BrandStyle.textSecondary,
-                    title: "\(signal.senderUsername) passed on your answer",
-                    subtitle: "That challenge has been closed.",
-                    timestamp: signal.resolvedAt ?? signal.respondedAt ?? signal.createdAt,
-                    statusText: "Closed"
-                )
-            }
-            .buttonStyle(.plain)
-        case .expired:
-            notificationRow(
-                icon: "clock.badge.xmark.fill",
-                tint: .orange,
-                title: signal.senderId == session.currentUser?.id
-                    ? "Your challenge to \(signal.receiverUsername) expired"
-                    : "\(signal.senderUsername)'s challenge expired",
-                subtitle: "The timer ran out before the challenge moved forward.",
-                timestamp: signal.expiresAt,
-                statusText: "Expired"
-            )
-        default:
-            EmptyView()
+    private func appearance(for type: AppNotification.AppNotificationType) -> (String, Color, String?) {
+        switch type {
+        case .likeReceived:      return ("heart.fill",                       BrandStyle.secondary, "Like")
+        case .matchCreated:      return ("person.2.fill",                    BrandStyle.accent,    "Match")
+        case .messageReceived:   return ("bubble.left.fill",                 .blue,                "Message")
+        case .impressMeReceived: return ("sparkles.rectangle.stack.fill",    BrandStyle.accent,    "Challenge")
+        case .unknown:           return ("bell.fill",                        BrandStyle.textSecondary, nil)
         }
     }
 
-    private func notificationDate(for signal: ImpressMeSignal) -> Date {
-        signal.resolvedAt ?? signal.respondedAt ?? signal.viewedAt ?? signal.createdAt
+    // MARK: – Actions
+
+    private func markRead(_ notification: AppNotification) {
+        guard !notification.isRead else { return }
+        Task {
+            try? await session.markNotificationRead(notificationId: notification.id)
+            if let idx = notifications.firstIndex(where: { $0.id == notification.id }) {
+                notifications[idx] = AppNotification(
+                    id: notification.id, type: notification.type,
+                    title: notification.title, body: notification.body,
+                    referenceId: notification.referenceId, actorId: notification.actorId,
+                    actorName: notification.actorName, actorPhotoUrl: notification.actorPhotoUrl,
+                    isRead: true, createdAt: notification.createdAt
+                )
+                unreadCount = max(0, unreadCount - 1)
+            }
+        }
+    }
+
+    private func markAllRead() async {
+        do {
+            try await session.markAllNotificationsRead()
+            notifications = notifications.map { n in
+                AppNotification(
+                    id: n.id, type: n.type, title: n.title, body: n.body,
+                    referenceId: n.referenceId, actorId: n.actorId,
+                    actorName: n.actorName, actorPhotoUrl: n.actorPhotoUrl,
+                    isRead: true, createdAt: n.createdAt
+                )
+            }
+            unreadCount = 0
+        } catch {
+            session.presentError(error)
+        }
     }
 
     private func load() async {
@@ -596,32 +529,11 @@ private struct NotificationsView: View {
         defer { isLoading = false }
 
         do {
-            inbox = try await session.getImpressMeInbox()
+            let result = try await session.loadNotifications()
+            notifications = result.notifications
+            unreadCount = result.unreadCount
         } catch {
             session.presentError(error)
-        }
-    }
-
-    private func applyUpdate(_ updated: ImpressMeSignal) {
-        guard var current = inbox else { return }
-
-        func replace(in list: inout [ImpressMeSignal]) {
-            if let index = list.firstIndex(where: { $0.id == updated.id }) {
-                list[index] = updated
-            }
-        }
-
-        replace(in: &current.received)
-        replace(in: &current.sent)
-
-        inbox = ImpressMeInbox(
-            received: current.received,
-            sent: current.sent,
-            unreadCount: current.received.filter { $0.status == .sent && $0.viewedAt == nil }.count
-        )
-
-        if let inbox {
-            session.syncImpressMeSummary(from: inbox)
         }
     }
 }

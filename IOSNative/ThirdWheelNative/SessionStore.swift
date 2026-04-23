@@ -11,6 +11,7 @@ final class SessionStore: ObservableObject {
     @Published private(set) var phase: Phase = .loading
     @Published private(set) var currentUser: UserProfile?
     @Published private(set) var impressMeSummary: ImpressMeSummary = .empty
+    @Published private(set) var notificationUnreadCount: Int = 0
     @Published var lastErrorMessage: String?
     @Published var isAuthenticating = false
 
@@ -77,6 +78,7 @@ final class SessionStore: ObservableObject {
         client.authToken = nil
         currentUser = nil
         impressMeSummary = .empty
+        notificationUnreadCount = 0
         phase = .signedOut
     }
 
@@ -256,6 +258,35 @@ final class SessionStore: ObservableObject {
         try await client.post("event/\(eventId.uuidString.lowercased())/interest", body: EmptyRequest())
     }
 
+    // MARK: – Verifications
+
+    func loadVerifications() async throws -> [VerificationMethod] {
+        let response: VerificationListResponse = try await client.get("verifications")
+        return response.methods
+    }
+
+    func startVerificationAttempt(methodKey: String) async throws -> StartVerificationAttemptResponse {
+        try await client.post(
+            "verifications/\(methodKey)/attempts",
+            body: StartVerificationAttemptRequest()
+        )
+    }
+
+    func completeVerificationAttempt(
+        methodKey: String,
+        attemptId: UUID,
+        decision: String,
+        providerReference: String?
+    ) async throws -> VerificationAttemptResponse {
+        try await client.post(
+            "verifications/\(methodKey)/attempts/\(attemptId.uuidString.lowercased())/complete",
+            body: CompleteVerificationAttemptRequest(
+                decision: decision,
+                providerReference: providerReference
+            )
+        )
+    }
+
     // MARK: – Impress Me
 
     func getImpressMeInbox() async throws -> ImpressMeInbox {
@@ -323,6 +354,38 @@ final class SessionStore: ObservableObject {
 
     func syncImpressMeSummary(from inbox: ImpressMeInbox) {
         impressMeSummary = inbox.summary
+    }
+
+    // MARK: – Notifications
+
+    func loadNotifications(skip: Int = 0, take: Int = 50) async throws -> NotificationListResponse {
+        let result: NotificationListResponse = try await client.get(
+            "notifications",
+            queryItems: [
+                URLQueryItem(name: "skip", value: String(skip)),
+                URLQueryItem(name: "take", value: String(take))
+            ]
+        )
+        notificationUnreadCount = result.unreadCount
+        return result
+    }
+
+    func markNotificationRead(notificationId: UUID) async throws {
+        let _: EmptyResponse = try await client.post(
+            "notifications/\(notificationId.uuidString.lowercased())/read",
+            body: EmptyRequest()
+        )
+        if notificationUnreadCount > 0 { notificationUnreadCount -= 1 }
+    }
+
+    func markAllNotificationsRead() async throws {
+        let _: EmptyResponse = try await client.post("notifications/read-all", body: EmptyRequest())
+        notificationUnreadCount = 0
+    }
+
+    func refreshNotificationCount() async {
+        guard let result = try? await loadNotifications(take: 1) else { return }
+        notificationUnreadCount = result.unreadCount
     }
 
     func clearError() {

@@ -16,6 +16,7 @@ using ThirdWheel.API.Data;
 using ThirdWheel.API.Helpers;
 using ThirdWheel.API.Hubs;
 using ThirdWheel.API.Services;
+using ThirdWheel.API.Services.Verification;
 
 var builder = WebApplication.CreateBuilder(args);
 var serviceVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
@@ -99,6 +100,8 @@ builder.Services.AddScoped<EventService>();
 builder.Services.AddSingleton<ImageService>();
 builder.Services.AddScoped<PromptGeneratorService>();
 builder.Services.AddScoped<ImpressMeService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddVerificationFramework(builder.Configuration);
 
 // Controllers + SignalR
 builder.Services.AddControllers();
@@ -174,11 +177,11 @@ var corsOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("MobileApp", policy =>
+    options.AddPolicy("IOSNativeApp", policy =>
     {
         if (builder.Environment.IsDevelopment() || corsOrigins.Length == 0)
         {
-            // Development-only: allow any origin so local simulators/Expo tunnels work.
+            // Development-only: allow any origin so local simulators and clients work.
             policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
         }
         else
@@ -351,7 +354,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 
 app.UseRateLimiter();
-app.UseCors("MobileApp");
+app.UseCors("IOSNativeApp");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -371,3 +374,5 @@ app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
+
+public partial class Program;

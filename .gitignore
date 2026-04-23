@@ -23,6 +23,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.docker
 
 # Docker
 pgdata/

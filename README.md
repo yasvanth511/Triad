@@ -1,522 +1,142 @@
 # Triad
 
-Triad is a dating and social discovery platform built around singles, couples, and group-aware matching. The repo currently contains:
+Triad is a dating and social discovery product built around singles, couples, and group-aware interactions. This repo currently contains the backend API, the native iOS client, and a lightweight admin dashboard for moderation and analytics.
 
-- an ASP.NET Core 10 backend API in `backend/ThirdWheel.API`
-- a native SwiftUI iOS client in `IOSNative/ThirdWheelNative`
-- an Expo / React Native client in `mobile/` that still lives in the repo as a parallel client
+The product name is `Triad`, while parts of the codebase still use the older `ThirdWheel` namespace and app names. When you see `ThirdWheel.API` or `ThirdWheelNative`, they are part of the same product.
 
-The backend is the shared source of truth. The native iOS app is where most recent product work has landed.
+## Current Repo State
 
----
+The active surfaces in this repository are:
 
-## Table of Contents
+- `backend/ThirdWheel.API`: ASP.NET Core 10 API with PostgreSQL, JWT auth, SignalR chat, local media storage, rate limiting, and OpenTelemetry
+- `IOSNative/ThirdWheelNative`: native SwiftUI iOS app used as the primary client in this repo
+- `admin/`: static admin dashboard shell for user, moderation, and geography views backed by `/api/admin/*`
 
-- [Repo Layout](#repo-layout)
-- [Current Product Scope](#current-product-scope)
-  - [Backend API](#backend-api)
-  - [Native iOS App](#native-ios-app)
-  - [Expo App](#expo-app)
-- [Backend Overview](#backend-overview)
-  - [Core Stack](#core-stack)
-  - [Main Backend Folders](#main-backend-folders)
-  - [Key Backend Features](#key-backend-features)
-- [Data Model Highlights](#data-model-highlights)
-  - [Profile Model Includes](#profile-model-includes)
-- [Current Feature Set](#current-feature-set)
-  - [Discovery](#discovery)
-  - [Saved Profiles](#saved-profiles)
-  - [Matching and Chat](#matching-and-chat)
-  - [Profile and Media](#profile-and-media)
-  - [Safety](#safety)
-  - [Events](#events)
-  - [Impress Me](#impress-me)
-- [Media Rules](#media-rules)
-- [API Surface](#api-surface)
-  - [Auth](#auth)
-  - [Profile](#profile)
-  - [Couple](#couple)
-  - [Discovery](#discovery-1)
-  - [Saved Profiles](#saved-profiles-1)
-  - [Matches](#matches)
-  - [Messaging](#messaging)
-  - [Safety](#safety-1)
-  - [Events](#events-1)
-  - [Impress Me](#impress-me-1)
-  - [Admin / Seed Support](#admin--seed-support)
-  - [Health / Docs / Realtime](#health--docs--realtime)
-- [Native iOS App Overview](#native-ios-app-overview)
-  - [App Structure](#app-structure)
-  - [Current Navigation Shape](#current-navigation-shape)
-  - [Current Profile Editing UX](#current-profile-editing-ux)
-- [Local Development](#local-development)
-  - [Fastest Workflow](#fastest-workflow)
-  - [API Only](#api-only)
-  - [Native iOS App Only](#native-ios-app-only)
-  - [Expo App](#expo-app-1)
-- [Seed Data](#seed-data)
-- [Configuration](#configuration)
-- [Business Rules and Limits](#business-rules-and-limits)
-- [Observability](#observability)
-- [Notes](#notes)
-- [License](#license)
-
----
+The backend is the source of truth for product behavior. The iOS app is the main end-user client here today.
 
 ## Repo Layout
 
 ```text
 Triad/
-├── backend/ThirdWheel.API/        # ASP.NET Core 10 API + SignalR + EF Core
-├── IOSNative/                     # Native SwiftUI iOS app
-│   ├── ThirdWheelNative/          # App source
-│   └── ThirdWheelNative.xcodeproj
-├── mobile/                        # Expo / React Native client
+├── admin/                         # Static admin dashboard shell
+├── backend/ThirdWheel.API/        # ASP.NET Core API
+├── IOSNative/                     # Native SwiftUI app + Xcode project
+├── scripts/
+│   ├── common/                    # Shared shell helpers
+│   ├── docker/docker.sh           # Docker helper commands
+│   ├── mobile/run-ios.sh          # Build API + simulator app
+│   ├── run/test-backend.sh        # Backend test runner
+│   └── setup/check-system.sh      # Local prerequisite check
+├── tests/                         # Unit + integration tests
 ├── docker-compose.yml             # Local API container
-├── seed.ps1                       # Demo data + events seeding
-└── redeploy.sh                    # Rebuild API + iOS simulator app
+├── Product.md                     # Product overview and positioning
+└── seed.ps1                       # Demo data seeding
 ```
 
----
-
-## Current Product Scope
-
-### Backend API
-
-The API currently provides:
-
-- JWT auth with registration and login
-- profile read/update/delete
-- multi-photo profile media
-- audio bio and video/highlight uploads
-- discovery feed for singles and couples
-- saved profiles
-- likes, matches, and unmatch
-- REST messaging plus SignalR chat
-- safety actions: block and report
-- local events and interest toggling
-- admin seed endpoints
-- Impress Me prompt / response flow
-- Swagger / OpenAPI in development
-
-### Native iOS App
-
-The SwiftUI app currently includes:
-
-- login and registration
-- Discover, Saved, Matches, Impress Me, and Events tabs
-- profile access from the top-right account button
-- dedicated profile edit screen pushed in navigation
-- Instagram-style profile media editing:
-  - photo grid management
-  - story-style highlight bubbles for videos
-- profile detail pages from discovery, saved profiles, and matches/chat
-- saved profiles revisit flow
-- chat screens
-- event browsing
-- native location permission handling
-- session persistence
-
-### Expo App
-
-The Expo app is still present in `mobile/` and talks to the same backend, but the most up-to-date feature work in this repo is reflected in the native iOS app.
-
----
-
-## Backend Overview
-
-### Core Stack
-
-| Area | Tech |
-|---|---|
-| API | ASP.NET Core 10 |
-| ORM | Entity Framework Core 10 + Npgsql |
-| Database | PostgreSQL |
-| Auth | JWT bearer tokens |
-| Realtime | SignalR |
-| Media processing | SixLabors.ImageSharp |
-| Observability | OpenTelemetry |
-| API docs | OpenAPI + Swagger UI |
-
-### Main Backend Folders
-
-| Path | Purpose |
-|---|---|
-| `Controllers/` | HTTP endpoints |
-| `Services/` | business logic |
-| `Models/` | EF Core entities |
-| `DTOs/` | request / response models |
-| `Data/` | `AppDbContext` |
-| `Helpers/` | mapping, geo helpers, default media helpers |
-| `Hubs/` | SignalR hub |
-| `Migrations/` | schema history |
-
-### Key Backend Features
-
-- `AuthService` handles registration, login, password hashing, and JWT generation.
-- `ProfileService` manages profile data, media, dating preferences, red flags, and account deletion.
-- `DiscoveryService` filters hidden / blocked / already-liked / already-saved users and returns discovery cards.
-- `SavedProfileService` stores revisit-able profiles.
-- `MatchingService` creates matches and supports group-aware chat when couple accounts are involved.
-- `MessagingService` powers match chat over REST.
-- `SafetyService` handles block and report workflows.
-- `ImpressMeService` supports prompt-based pre-match and post-match interaction.
-- `EventService` handles local event listing and interest toggling.
-
----
-
-## Data Model Highlights
-
-The data model now includes more than the original core dating entities. Important current entities include:
-
-- `User`
-- `UserPhoto`
-- `UserVideo`
-- `UserInterest`
-- `UserRedFlag`
-- `Couple`
-- `SavedProfile`
-- `Like`
-- `Match`
-- `Message`
-- `Block`
-- `Report`
-- `SpamWarning`
-- `Event`
-- `EventInterest`
-- `ImpressMePrompt`
-- `ImpressMeSignal`
-- `ImpressMeResponse`
-
-### Profile Model Includes
-
-User profiles currently include:
-
-- bio
-- age range
-- intent
-- looking-for preference
-- interests
-- red flags
-- city / state / zip
-- radius
-- couple linkage and partner name
-- audio bio URL
-- legacy `videoBioUrl`
-- ordered `videos` list for story/highlight-style media
-- dating preference fields such as:
-  - interested in
-  - neighborhood
-  - ethnicity
-  - religion
-  - relationship type
-  - height
-  - children / family plans
-  - drugs / smoking / marijuana / drinking
-  - politics
-  - education level
-  - weight
-  - physique
-  - sexual preference
-  - comfort with intimacy
-
----
-
-## Current Feature Set
-
-### Discovery
-
-- audience filter: all / singles / couples
-- discovery excludes blocked users, already liked users, and already saved users
-- public profile detail screen from discovery cards
-- save, skip, and like actions
-
-### Saved Profiles
-
-- save profiles for later
-- revisit saved profiles from the `Saved` tab
-- remove saved profiles
-
-### Matching and Chat
-
-- mutual likes create matches
-- matches list in the app
-- chat thread per match
-- SignalR hub at `/hubs/chat`
-- REST message fallback endpoints
-- profile detail navigation from chat context
-
-### Profile and Media
-
-- default profile image fallback for new users
-- custom profile photo uploads enabled again
-- ordered multi-photo support
-- story-style video highlights
-- audio bio upload
-- dating preferences and red flags
-- dedicated native edit screen instead of a modal sheet
-
-### Safety
-
-- block user
-- unblock user
-- report user with reason and optional detail
-- anti-spam validation for profile and message content
-
-### Events
-
-- list events near the user
-- toggle event interest
-- create and clean up demo events through the API
-
-### Impress Me
-
-Impress Me is a prompt-based interaction system currently built into both backend and iOS native app.
-
-It supports:
-
-- sending a signal to another user
-- inbox view for sent and received signals
-- prompt response submission
-- sender review flow
-- accept / decline flow
-- pre-match and post-match usage
-
----
-
-## Media Rules
-
-Current backend-enforced media rules:
-
-| Rule | Value |
-|---|---|
-| Max profile photos | 5 |
-| Max profile videos | 3 |
-| Max image width | 1200 px |
-| Max audio bio size | 10 MB |
-| Max video size | 50 MB |
-| Allowed audio types | mp3, mp4, m4a, aac, wav |
-| Allowed video types | mp4, mov, m4v, mpeg, webm |
-
-Notes:
-
-- Photos are normalized through the API.
-- A shared default image is used as fallback when a user has no custom photos.
-- The profile API currently still carries both `videoBioUrl` and the newer ordered `videos` list.
-
----
-
-## API Surface
-
-Base API route prefix: `/api`
-
-### Auth
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/auth/register` |
-| `POST` | `/api/auth/login` |
-
-### Profile
-
-| Method | Endpoint |
-|---|---|
-| `GET` | `/api/profile` |
-| `GET` | `/api/profile/{userId}` |
-| `PUT` | `/api/profile` |
-| `DELETE` | `/api/profile` |
-| `POST` | `/api/profile/photos` |
-| `DELETE` | `/api/profile/photos/{photoId}` |
-| `POST` | `/api/profile/audio-bio` |
-| `DELETE` | `/api/profile/audio-bio` |
-| `POST` | `/api/profile/video-bio` |
-| `DELETE` | `/api/profile/video-bio` |
-| `POST` | `/api/profile/videos` |
-| `DELETE` | `/api/profile/videos/{videoId}` |
-
-### Couple
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/couple` |
-| `POST` | `/api/couple/join` |
-| `DELETE` | `/api/couple` |
-
-### Discovery
-
-| Method | Endpoint |
-|---|---|
-| `GET` | `/api/discovery` |
-
-Query params:
-
-- `userType`
-- `maxDistanceKm`
-- `skip`
-- `take`
-
-### Saved Profiles
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/saved` |
-| `GET` | `/api/saved` |
-| `DELETE` | `/api/saved/{targetUserId}` |
-
-### Matches
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/match/like` |
-| `GET` | `/api/match` |
-| `DELETE` | `/api/match/{matchId}` |
-
-### Messaging
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/message/{matchId}` |
-| `GET` | `/api/message/{matchId}` |
-
-### Safety
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/safety/block` |
-| `DELETE` | `/api/safety/block/{userId}` |
-| `POST` | `/api/safety/report` |
-
-### Events
-
-| Method | Endpoint |
-|---|---|
-| `GET` | `/api/event` |
-| `POST` | `/api/event/{eventId}/interest` |
-| `POST` | `/api/event` |
-| `DELETE` | `/api/event/cleanup` |
-| `DELETE` | `/api/event/{id}` |
-
-### Impress Me
-
-| Method | Endpoint |
-|---|---|
-| `POST` | `/api/impress-me` |
-| `GET` | `/api/impress-me/inbox` |
-| `GET` | `/api/impress-me/{id}` |
-| `POST` | `/api/impress-me/{id}/respond` |
-| `POST` | `/api/impress-me/{id}/review` |
-| `POST` | `/api/impress-me/{id}/accept` |
-| `POST` | `/api/impress-me/{id}/decline` |
-
-### Admin / Seed Support
-
-| Method | Endpoint |
-|---|---|
-| `DELETE` | `/api/admin/seed-users` |
-| `DELETE` | `/api/admin/seed-events` |
-| `POST` | `/api/admin/seed-user` |
-
-### Health / Docs / Realtime
-
-| Endpoint | Purpose |
-|---|---|
-| `/health` | health check |
-| `/swagger` | Swagger UI in development |
-| `/openapi/v1.json` | OpenAPI document in development |
-| `/hubs/chat` | SignalR hub |
-
----
-
-## Native iOS App Overview
-
-### App Structure
-
-The main SwiftUI app lives in `IOSNative/ThirdWheelNative`.
-
-Important files:
-
-| Path | Purpose |
-|---|---|
-| `ThirdWheelNativeApp.swift` | app entry |
-| `RootView.swift` | session gate + tab shell |
-| `SessionStore.swift` | auth/session/API coordination |
-| `AuthView.swift` | sign in / register |
-| `DiscoverView.swift` | discovery feed |
-| `SavedProfilesView.swift` | saved profiles |
-| `MatchesView.swift` | matches + chat |
-| `ImpressMeView.swift` | Impress Me inbox |
-| `EventsView.swift` | events |
-| `ProfileView.swift` | profile + edit flow |
-| `ProfileDetailView.swift` | public profile detail |
-| `UIComponents.swift` | shared native UI components |
-
-### Current Navigation Shape
-
-- `Discover`
-- `Saved`
-- `Matches`
-- `Impress`
-- `Events`
-- `Profile` via top-right account button
-
-### Current Profile Editing UX
-
-The profile edit flow is now a dedicated screen pushed from `ProfileView`, not a popup sheet. It currently includes:
-
-- media editing cards
-- photo grid management
-- highlight/video management
-- bio and basic preferences
-- location
-- interests
-- red flags
-- dating preference menus
-- audio bio upload
-
----
-
-## Local Development
-
-### Fastest Workflow
-
-Use the repo script:
+## What Exists Today
+
+Triad currently supports:
+
+- email/password registration and login with JWT sessions
+- rich single-user profiles with photos, audio bio, legacy video bio, ordered video highlights, interests, red flags, and lifestyle fields
+- couple creation and join flows with invite codes
+- discovery filtering for singles, couples, and distance-aware browsing
+- saving profiles for later
+- likes, matches, unmatch, and chat
+- group-aware chat behavior when a couple is involved in a match
+- in-app notifications for likes, matches, messages, and Impress Me activity
+- safety tools including block, unblock, report, and anti-spam checks
+- event browsing and interest toggling
+- Impress Me prompt-response flows before or after a match
+- a verification framework with attempt tracking, status history, expiry handling, and trust badges
+- admin-safe user, moderation, and geography views via `/api/admin/*`
+
+## Quick Start
+
+### 1. Create Local Docker Env
 
 ```bash
-./redeploy.sh
+cp .env.docker.example .env.docker
 ```
 
-This script:
+Update `.env.docker` with a working PostgreSQL connection string and a JWT key that is at least 32 characters long.
 
-1. rebuilds and redeploys the Docker API
-2. waits for `http://localhost:5127/health`
-3. builds the native iOS app
-4. reinstalls and relaunches the app in the simulator
-
-Optional overrides:
+### 2. Check Local Prerequisites
 
 ```bash
-SIMULATOR_NAME="iPhone 16 Pro" ./redeploy.sh
-SIMULATOR_UDID="YOUR-SIM-UDID" ./redeploy.sh
-API_PORT=5127 ./redeploy.sh
+./scripts/setup/check-system.sh
 ```
 
-### API Only
+This checks for `curl`, `docker`, `open`, `xcodebuild`, `xcrun`, `dotnet`, and the presence of `.env.docker`.
+
+### 3. Start The API
 
 ```bash
 docker compose up -d --build api
 ```
 
-The API is exposed on:
-
-- `http://localhost:5127`
-
-Useful URLs:
+Useful local URLs:
 
 - `http://localhost:5127/health`
 - `http://localhost:5127/swagger`
 - `http://localhost:5127/openapi/v1.json`
 
-### Native iOS App Only
+Swagger and OpenAPI are only enabled in development.
+
+### 4. Start The Admin Dashboard
+
+```bash
+docker compose up -d --build admin
+```
+
+Useful local URL:
+
+- `http://localhost:5173`
+
+### 5. Run The Native iOS App
+
+```bash
+./scripts/mobile/run-ios.sh
+```
+
+That script:
+
+1. rebuilds and redeploys the Docker API
+2. waits for `http://localhost:5127/health`
+3. boots or reuses an iOS simulator
+4. builds `ThirdWheelNative`
+5. installs and launches the app
+
+Useful overrides:
+
+```bash
+SIMULATOR_NAME="iPhone 16 Pro" ./scripts/mobile/run-ios.sh
+SIMULATOR_UDID="YOUR-SIM-UDID" ./scripts/mobile/run-ios.sh
+API_PORT=5127 ./scripts/mobile/run-ios.sh
+```
+
+## Day-To-Day Workflows
+
+### Backend Tests
+
+```bash
+./scripts/run/test-backend.sh unit
+./scripts/run/test-backend.sh integration
+./scripts/run/test-backend.sh all
+```
+
+The test runner uses local `dotnet` when available and falls back to Docker with the .NET 10 SDK image.
+
+### API-Only Development
+
+```bash
+./scripts/docker/docker.sh up
+./scripts/docker/docker.sh logs
+./scripts/docker/docker.sh rebuild
+./scripts/docker/docker.sh down
+```
+
+### Native iOS Build Only
 
 ```bash
 xcodebuild \
@@ -535,21 +155,9 @@ xcrun simctl install booted /tmp/Triad/ios-build/Build/Products/Debug-iphonesimu
 xcrun simctl launch booted com.thirdwheel.iosnative
 ```
 
-### Expo App
+### Demo Data
 
-If you want to run the Expo client:
-
-```bash
-cd mobile
-npm install
-npm run ios
-```
-
----
-
-## Seed Data
-
-Run the seed script from the repo root:
+Run from the repo root:
 
 ```powershell
 .\seed.ps1
@@ -559,98 +167,203 @@ The current seed flow:
 
 - preserves `yasvanth@live.in`
 - deletes other users and old seeded events
-- creates `15` single users
-- creates `5` couple pairs (`10` users)
-- total seeded profiles: `25`
-- uses Washington State locations only
-- creates `6` Washington-based events
-- seeds a set of likes/matches for the preserved demo user
+- creates demo singles and couples
+- creates events
+- seeds likes and matches for the preserved demo user
 
-Current seeded cities include places such as:
+## Current Architecture
 
-- Seattle
-- Bellevue
-- Tacoma
-- Spokane
-- Olympia
-- Everett
-- Bellingham
-- Vancouver, WA
-- Redmond
-- Kirkland
-- Renton
-- Issaquah
-- Yakima
-- Wenatchee
-- Kennewick
+### Backend
 
----
+| Area | Tech |
+|---|---|
+| API | ASP.NET Core 10 |
+| ORM | Entity Framework Core 10 |
+| Database | PostgreSQL via Npgsql |
+| Auth | JWT bearer tokens |
+| Realtime | SignalR |
+| Media processing | SixLabors.ImageSharp |
+| API docs | OpenAPI + Swagger UI in development |
+| Observability | OpenTelemetry logs, traces, and metrics |
+
+Important backend areas:
+
+| Path | Purpose |
+|---|---|
+| `Controllers/` | HTTP endpoints |
+| `Services/` | business logic |
+| `Models/` | EF Core entities |
+| `DTOs/` | request and response contracts |
+| `Data/` | `AppDbContext` and persistence |
+| `Hubs/` | SignalR chat hub |
+| `Helpers/` | mapping, geo, and media helpers |
+| `Migrations/` | schema history |
+
+### Native iOS
+
+The SwiftUI app currently includes:
+
+- auth and session persistence through Keychain
+- Discover, Saved, Matches, Impress Me, and Events destinations
+- top-right notifications and profile access
+- dedicated profile viewing and editing flows
+- media upload flows for photos, audio bio, and ordered profile videos
+- public profile detail views from multiple entry points
+- verification badge loading and start flows for the currently surfaced methods
+
+Key app files:
+
+| Path | Purpose |
+|---|---|
+| `ThirdWheelNativeApp.swift` | app entry |
+| `RootView.swift` | session gate, nav shell, badges |
+| `SessionStore.swift` | auth, session, and API coordination |
+| `AuthView.swift` | sign in and registration |
+| `DiscoverView.swift` | discovery feed |
+| `SavedProfilesView.swift` | saved profiles |
+| `MatchesView.swift` | matches and chat |
+| `ImpressMeView.swift` | inbox and action flow |
+| `EventsView.swift` | event browsing |
+| `ProfileView.swift` | profile display and editing |
+
+### Admin Surface
+
+`admin/` is a lightweight static dashboard shell. It reads from admin-safe endpoints and currently focuses on:
+
+- user list summaries
+- online user summaries
+- geography analytics
+- moderation analytics
+
+It is useful for internal demos and operations, but it is not a full production admin product yet.
+When started through Docker, the admin container serves the static dashboard and proxies `/api/*` requests to the `api` service.
+
+## API And Realtime Surface
+
+Base REST prefix: `/api`
+
+### Core Endpoints
+
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /api/auth/register`, `POST /api/auth/login` |
+| Profile | `GET /api/profile`, `GET /api/profile/{userId}`, `PUT /api/profile`, `DELETE /api/profile` |
+| Profile media | `POST /api/profile/photos`, `DELETE /api/profile/photos/{photoId}`, `POST /api/profile/audio-bio`, `DELETE /api/profile/audio-bio`, `POST /api/profile/video-bio`, `DELETE /api/profile/video-bio`, `POST /api/profile/videos`, `DELETE /api/profile/videos/{videoId}` |
+| Couple | `POST /api/couple`, `POST /api/couple/join`, `DELETE /api/couple` |
+| Discovery | `GET /api/discovery` |
+| Saved | `POST /api/saved`, `GET /api/saved`, `DELETE /api/saved/{targetUserId}` |
+| Match | `POST /api/match/like`, `GET /api/match`, `DELETE /api/match/{matchId}` |
+| Message | `POST /api/message/{matchId}`, `GET /api/message/{matchId}` |
+| Notifications | `GET /api/notifications`, `POST /api/notifications/{id}/read`, `POST /api/notifications/read-all` |
+| Verifications | `GET /api/verifications`, `POST /api/verifications/{methodKey}/attempts`, `POST /api/verifications/{methodKey}/attempts/{attemptId}/complete` |
+| Safety | `POST /api/safety/block`, `DELETE /api/safety/block/{userId}`, `POST /api/safety/report` |
+| Events | `GET /api/event`, `POST /api/event/{eventId}/interest`, `POST /api/event`, `DELETE /api/event/cleanup`, `DELETE /api/event/{id}` |
+| Impress Me | `POST /api/impress-me`, `GET /api/impress-me/inbox`, `GET /api/impress-me/summary`, `GET /api/impress-me/{id}`, `POST /api/impress-me/{id}/respond`, `POST /api/impress-me/{id}/review`, `POST /api/impress-me/{id}/accept`, `POST /api/impress-me/{id}/decline` |
+| Admin | `GET /api/admin/users`, `GET /api/admin/users/{userId}`, `GET /api/admin/online-users`, `GET /api/admin/moderation-analytics`, `DELETE /api/admin/seed-users`, `DELETE /api/admin/seed-events`, `POST /api/admin/seed-user` |
+
+### Realtime And Utility Endpoints
+
+| Endpoint | Purpose |
+|---|---|
+| `/health` | health check |
+| `/hubs/chat` | SignalR chat hub |
+| `/uploads/*` | locally served uploaded media |
+| `/swagger` | Swagger UI in development |
+| `/openapi/v1.json` | OpenAPI document in development |
+
+### Discovery Query Params
+
+`GET /api/discovery` currently supports:
+
+- `userType`
+- `maxDistanceKm`
+- `skip`
+- `take`
+
+### Configured Verification Methods
+
+The verification registry currently includes:
+
+- `live_verified`
+- `age_verified`
+- `phone_verified`
+- `couple_verified`
+- `partner_consent_verified`
+- `intent_verified`
+- `in_person_verified`
+- `social_verified`
 
 ## Configuration
 
-Important environment/config values:
+Important environment values:
 
 | Setting | Purpose |
 |---|---|
 | `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
-| `Jwt__Key` | JWT signing key |
+| `Jwt__Key` | JWT signing key, minimum 32 chars |
 | `Jwt__Issuer` | token issuer |
 | `Jwt__Audience` | token audience |
-| `Cors__AllowedOrigins` | non-dev CORS allowlist |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry exporter endpoint |
+| `Cors__AllowedOrigins` | non-development CORS allowlist |
+| `Verification__Methods__<key>__Enabled` | toggle individual verification methods |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP exporter endpoint |
 | `APIBaseURL` in iOS `Info.plist` | physical-device backend URL override |
 
-Current local defaults:
+Local defaults used by the repo workflow:
 
 - API port: `5127`
 - iOS bundle id: `com.thirdwheel.iosnative`
-- default simulator target used by repo workflow: `iPhone 17`
+- default simulator target: `iPhone 17`
 
----
+## Runtime Behavior And Limits
 
-## Business Rules and Limits
+### Runtime Notes
+
+- the API validates `Jwt:Key` and `DefaultConnection` at startup
+- development startup runs automatic EF Core migrations
+- uploads are stored on local disk under `uploads/` and served from `/uploads`
+- non-development builds redirect HTTP to HTTPS
+- the global API rate limiter is `120` requests per `60` seconds per IP
+
+### Current Limits
 
 | Rule | Current Value |
 |---|---|
 | JWT expiry | 7 days |
-| Global API limiter | 120 requests / 60 seconds per IP |
 | Max likes per day | 50 |
 | Max profile photos | 5 |
 | Max profile videos | 3 |
+| Max image width | 1200 px |
+| Max audio bio size | 10 MB |
+| Max video size | 50 MB |
+| Max video duration | 60 seconds |
 | Bio max length | 500 chars |
 | Message max length | 2000 chars |
 | Spam strikes before ban | 3 |
 | Repeated message trigger | 3 identical messages in 5 minutes |
-
----
+| Impress Me daily quota | 5 |
+| Impress Me max active outbound | 10 |
+| Impress Me response max length | 1000 chars |
+| Impress Me expiry | 48 hours |
+| Live verification expiry | 365 days |
+| Age verification expiry | 365 days |
 
 ## Observability
 
-The backend is wired for OpenTelemetry traces, metrics, and logs.
+The backend is instrumented with OpenTelemetry for:
 
-Instrumentation includes:
-
-- ASP.NET Core
-- HTTP client
-- EF Core
+- ASP.NET Core requests
+- outbound HTTP calls
+- EF Core operations
 - runtime metrics
+- structured application logs
 
-Development mode also enables:
-
-- console exporters
-- Swagger UI
-- automatic migrations on startup
-
----
+Console exporters are enabled in development, and OTLP exporters activate when OTLP endpoint variables are present.
 
 ## Notes
 
-- Swagger only appears in development.
-- The SignalR hub does not appear as a full REST endpoint in Swagger.
-- The native iOS app is ahead of the Expo client in terms of current product features.
-- `IOSNative/README.md` still describes an earlier scope; this root README is the current project-level source of truth.
-
----
+- `Product.md` is the product-facing companion to this README.
+- Swagger does not list the SignalR hub because `/hubs/chat` is not a REST endpoint.
+- The admin endpoints intentionally return admin-safe summaries, not raw private profile artifacts.
 
 ## License
 

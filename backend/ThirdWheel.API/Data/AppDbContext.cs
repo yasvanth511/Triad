@@ -25,6 +25,10 @@ public class AppDbContext : DbContext
     public DbSet<ImpressMeSignal> ImpressMeSignals => Set<ImpressMeSignal>();
     public DbSet<ImpressMePrompt> ImpressMePrompts => Set<ImpressMePrompt>();
     public DbSet<ImpressMeResponse> ImpressMeResponses => Set<ImpressMeResponse>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<UserVerification> UserVerifications => Set<UserVerification>();
+    public DbSet<VerificationAttempt> VerificationAttempts => Set<VerificationAttempt>();
+    public DbSet<VerificationEvent> VerificationEvents => Set<VerificationEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -214,6 +218,36 @@ public class AppDbContext : DbContext
             e.HasIndex(s => new { s.SenderId,   s.CreatedAt });
             e.HasIndex(s => new { s.SenderId, s.ReceiverId, s.Status });
             e.HasIndex(s => s.ExpiresAt);
+        });
+
+        // Notifications
+        modelBuilder.Entity<Notification>(e =>
+        {
+            e.HasIndex(n => new { n.RecipientId, n.CreatedAt });
+            e.HasIndex(n => new { n.RecipientId, n.IsRead });
+        });
+
+        modelBuilder.Entity<UserVerification>(e =>
+        {
+            e.Property(v => v.StateJson).HasColumnType("text");
+            e.HasIndex(v => new { v.UserId, v.MethodKey }).IsUnique();
+            e.HasIndex(v => new { v.UserId, v.Status });
+        });
+
+        modelBuilder.Entity<VerificationAttempt>(e =>
+        {
+            e.Property(a => a.RequestJson).HasColumnType("text");
+            e.Property(a => a.ResultJson).HasColumnType("text");
+            e.HasIndex(a => new { a.UserId, a.MethodKey, a.IdempotencyKey }).IsUnique();
+            e.HasIndex(a => new { a.VerificationId, a.StartedAt });
+            e.HasIndex(a => new { a.UserId, a.MethodKey, a.StartedAt });
+        });
+
+        modelBuilder.Entity<VerificationEvent>(e =>
+        {
+            e.Property(v => v.DataJson).HasColumnType("text");
+            e.HasIndex(v => new { v.VerificationId, v.CreatedAt });
+            e.HasIndex(v => new { v.UserId, v.MethodKey, v.CreatedAt });
         });
 
         // EventInterest unique constraint

@@ -9,11 +9,13 @@ public class ImpressMeService
 {
     private readonly AppDbContext _db;
     private readonly PromptGeneratorService _promptGen;
+    private readonly NotificationService _notifications;
 
-    public ImpressMeService(AppDbContext db, PromptGeneratorService promptGen)
+    public ImpressMeService(AppDbContext db, PromptGeneratorService promptGen, NotificationService notifications)
     {
         _db = db;
         _promptGen = promptGen;
+        _notifications = notifications;
     }
 
     // ── Send ─────────────────────────────────────────────────────────────────
@@ -77,6 +79,8 @@ public class ImpressMeService
 
         _db.ImpressMeSignals.Add(signal);
         await _db.SaveChangesAsync();
+
+        try { await _notifications.NotifyImpressMeAsync(senderId, req.TargetUserId, signal.Id); } catch { }
 
         return await LoadAndMapAsync(signal.Id);
     }
@@ -184,12 +188,27 @@ public class ImpressMeService
         if (signal.Status != ImpressMeStatus.Sent)
             throw new InvalidOperationException($"Signal cannot be responded to in its current state.");
 
-        signal.Response = new ImpressMeResponse { TextContent = req.TextContent.Trim() };
-        signal.Status      = ImpressMeStatus.Responded;
-        signal.RespondedAt = DateTime.UtcNow;
+        var response = new ImpressMeResponse
+        {
+            SignalId = signal.Id,
+            TextContent = req.TextContent.Trim()
+        };
+
+        _db.Entry(signal).State = EntityState.Detached;
+        _db.ImpressMeResponses.Add(response);
+
+        var respondedAt = DateTime.UtcNow;
+        var updatedRows = await _db.ImpressMeSignals
+            .Where(s => s.Id == signalId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(s => s.Status, ImpressMeStatus.Responded)
+                .SetProperty(s => s.RespondedAt, respondedAt));
+
+        if (updatedRows == 0)
+            throw new KeyNotFoundException("Signal not found.");
 
         await _db.SaveChangesAsync();
-        return Map(signal);
+        return await LoadAndMapAsync(signalId);
     }
 
     // ── Review (sender marks as viewed) ──────────────────────────────────────

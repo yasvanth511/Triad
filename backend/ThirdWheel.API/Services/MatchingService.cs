@@ -8,8 +8,13 @@ namespace ThirdWheel.API.Services;
 public class MatchingService
 {
     private readonly AppDbContext _db;
+    private readonly NotificationService _notifications;
 
-    public MatchingService(AppDbContext db) => _db = db;
+    public MatchingService(AppDbContext db, NotificationService notifications)
+    {
+        _db = db;
+        _notifications = notifications;
+    }
 
     public async Task<MatchResponse?> LikeUserAsync(Guid fromUserId, Guid toUserId)
     {
@@ -76,6 +81,8 @@ public class MatchingService
                 _db.Matches.Add(match);
                 await _db.SaveChangesAsync();
 
+                try { await _notifications.NotifyMatchAsync(match, fromUserId); } catch { }
+
                 var participants = await ResolveParticipantsAsync(match, fromUserId);
                 Telemetry.MatchOperations.Add(1,
                     new KeyValuePair<string, object?>("operation", "like"),
@@ -84,6 +91,8 @@ public class MatchingService
                 Telemetry.MarkSuccess(activity);
                 return new MatchResponse(match.Id, participants, match.CreatedAt, participants.Count > 1);
             }
+
+            try { await _notifications.NotifyLikeAsync(fromUserId, toUserId); } catch { }
 
             Telemetry.MatchOperations.Add(1,
                 new KeyValuePair<string, object?>("operation", "like"),

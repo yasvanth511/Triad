@@ -21,6 +21,7 @@ public class ChatHub : Hub
     {
         using var activity = Telemetry.ActivitySource.StartActivity("signalr.connected");
         var userId = GetUserId();
+        OnlineUserPresenceTracker.MarkOnline(userId, Context.ConnectionId);
         activity?.SetTag("enduser.id", userId);
         activity?.SetTag("network.protocol.name", "signalr");
         await Groups.AddToGroupAsync(Context.ConnectionId, userId.ToString());
@@ -29,6 +30,17 @@ public class ChatHub : Hub
             new KeyValuePair<string, object?>("outcome", "success"));
         Telemetry.MarkSuccess(activity);
         await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var claim = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(claim, out var userId))
+        {
+            OnlineUserPresenceTracker.MarkOffline(userId, Context.ConnectionId);
+        }
+
+        await base.OnDisconnectedAsync(exception);
     }
 
     public async Task JoinMatch(string matchId)

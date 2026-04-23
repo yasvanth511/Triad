@@ -254,6 +254,96 @@ struct LikeResult: Codable {
     let match: MatchItem?
 }
 
+struct AppNotification: Codable, Identifiable {
+    let id: UUID
+    let type: AppNotificationType
+    let title: String
+    let body: String
+    let referenceId: UUID?
+    let actorId: UUID?
+    let actorName: String?
+    let actorPhotoUrl: String?
+    let isRead: Bool
+    let createdAt: Date
+
+    enum AppNotificationType: String, Codable {
+        case likeReceived = "LikeReceived"
+        case matchCreated = "MatchCreated"
+        case messageReceived = "MessageReceived"
+        case impressMeReceived = "ImpressMeReceived"
+        case unknown
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let raw = try container.decode(String.self)
+            self = AppNotificationType(rawValue: raw) ?? .unknown
+        }
+    }
+}
+
+struct NotificationListResponse: Codable {
+    let notifications: [AppNotification]
+    let unreadCount: Int
+}
+
+enum VerificationMethodKey: String, Codable {
+    case liveVerified = "live_verified"
+    case ageVerified = "age_verified"
+}
+
+struct VerificationMethod: Codable, Identifiable {
+    let key: String
+    let displayName: String
+    let status: String
+    let isEnabled: Bool
+    let isEligible: Bool
+    let ineligibilityReason: String?
+    let version: String
+    let capabilities: [String]
+    let failureReason: String?
+    let verifiedAt: Date?
+    let expiresAt: Date?
+    let updatedAt: Date
+
+    var id: String { key }
+    var methodKey: VerificationMethodKey? { VerificationMethodKey(rawValue: key) }
+    var supportsProfileEntryPoint: Bool { methodKey != nil }
+    var isVerified: Bool { status == "verified" }
+    var canStart: Bool { isEnabled && isEligible && ["not_started", "failed", "expired"].contains(status) }
+    var displayStatus: String { status.replacingOccurrences(of: "_", with: " ").capitalized }
+}
+
+struct VerificationListResponse: Codable {
+    let methods: [VerificationMethod]
+}
+
+struct StartVerificationAttemptRequest: Encodable {
+    let idempotencyKey: String? = nil
+}
+
+struct StartVerificationAttemptResponse: Codable {
+    let attemptId: UUID
+    let methodKey: String
+    let status: String
+    let clientToken: String?
+    let expiresAt: Date?
+}
+
+struct CompleteVerificationAttemptRequest: Encodable {
+    let decision: String
+    let providerToken: String? = nil
+    let providerReference: String?
+}
+
+struct VerificationAttemptResponse: Codable {
+    let attemptId: UUID
+    let methodKey: String
+    let status: String
+    let failureReason: String?
+    let verifiedAt: Date?
+    let expiresAt: Date?
+}
+
 struct APIErrorResponse: Decodable {
     let error: String?
     let message: String?

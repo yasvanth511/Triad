@@ -8,11 +8,25 @@ struct ProfileView: View {
     @State private var isEditingProfile = false
     @State private var isShowingDeleteConfirmation = false
     @State private var isDeletingAccount = false
+    @State private var verificationMethods: [VerificationMethod] = []
+    @State private var isLoadingVerifications = false
+    @State private var startingVerificationKey: String?
+    @State private var activeVerificationFlow: ActiveVerificationFlow?
 
     private let metricColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
     ]
+
+    private var profileVerificationMethods: [VerificationMethod] {
+        verificationMethods
+            .filter { $0.supportsProfileEntryPoint && ($0.isEnabled || $0.isVerified) }
+            .sorted { $0.displayName < $1.displayName }
+    }
+
+    private var verifiedProfileMethods: [VerificationMethod] {
+        profileVerificationMethods.filter(\.isVerified)
+    }
 
     var body: some View {
         ScreenContainer(title: "Profile") {
@@ -34,10 +48,20 @@ struct ProfileView: View {
 
                             Spacer()
 
-                            SectionBadge(
-                                text: user.isCouple ? "Couple" : "Single",
-                                color: user.isCouple ? BrandStyle.secondary : BrandStyle.accent
-                            )
+                            VStack(alignment: .trailing, spacing: 8) {
+                                SectionBadge(
+                                    text: user.isCouple ? "Couple" : "Single",
+                                    color: user.isCouple ? BrandStyle.secondary : BrandStyle.accent
+                                )
+
+                                ForEach(verifiedProfileMethods) { method in
+                                    SectionBadge(
+                                        text: method.displayName,
+                                        color: verificationTint(for: method),
+                                        icon: "checkmark.seal.fill"
+                                    )
+                                }
+                            }
                         }
 
                         Text(user.bio.isEmpty ? "No bio yet. Add a short intro so your profile feels more like you." : user.bio)
@@ -117,6 +141,27 @@ struct ProfileView: View {
                         }
                     }
                     .triadCard()
+
+                    if !profileVerificationMethods.isEmpty {
+                        VStack(alignment: .leading, spacing: 14) {
+                            profileSectionHeader(
+                                title: "Verifications",
+                                subtitle: "Add trust signals to your profile."
+                            )
+
+                            VStack(spacing: 12) {
+                                ForEach(profileVerificationMethods) { method in
+                                    ProfileVerificationRow(
+                                        method: method,
+                                        tint: verificationTint(for: method),
+                                        isLoading: startingVerificationKey == method.key,
+                                        action: method.canStart ? { startVerification(method) } : nil
+                                    )
+                                }
+                            }
+                        }
+                        .triadCard()
+                    }
 
                     VStack(alignment: .leading, spacing: 14) {
                         profileSectionHeader(
@@ -214,6 +259,16 @@ struct ProfileView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadVerifications()
+        }
+        .sheet(item: $activeVerificationFlow) { flow in
+            ProfileVerificationVendorSheet(flow: flow) { decision, providerReference in
+                Task {
+                    await completeVerification(flow, decision: decision, providerReference: providerReference)
+                }
+            }
+        }
     }
 
     private func deleteAccount() async {
@@ -231,6 +286,73 @@ struct ProfileView: View {
     private func displayLocation(for user: UserProfile) -> String {
         let parts = [user.city, user.state].filter { !$0.isEmpty }
         return parts.isEmpty ? "Location not set" : parts.joined(separator: ", ")
+    }
+
+    private func loadVerifications() async {
+        guard !isLoadingVerifications else { return }
+        isLoadingVerifications = true
+        defer { isLoadingVerifications = false }
+
+        do {
+            verificationMethods = try await session.loadVerifications()
+        } catch {
+            session.presentError(error)
+        }
+    }
+
+    private func startVerification(_ method: VerificationMethod) {
+        guard startingVerificationKey == nil else { return }
+        startingVerificationKey = method.key
+
+        Task {
+            defer { startingVerificationKey = nil }
+
+            do {
+                let attempt = try await session.startVerificationAttempt(methodKey: method.key)
+
+                guard let clientToken = attempt.clientToken else {
+                    throw APIClientError.invalidResponse
+                }
+
+                activeVerificationFlow = ActiveVerificationFlow(
+                    method: method,
+                    attemptId: attempt.attemptId,
+                    clientToken: clientToken
+                )
+            } catch {
+                session.presentError(error)
+            }
+        }
+    }
+
+    private func completeVerification(
+        _ flow: ActiveVerificationFlow,
+        decision: String,
+        providerReference: String
+    ) async {
+        do {
+            _ = try await session.completeVerificationAttempt(
+                methodKey: flow.method.key,
+                attemptId: flow.attemptId,
+                decision: decision,
+                providerReference: providerReference
+            )
+            activeVerificationFlow = nil
+            await loadVerifications()
+        } catch {
+            session.presentError(error)
+        }
+    }
+
+    private func verificationTint(for method: VerificationMethod) -> Color {
+        switch method.methodKey {
+        case .ageVerified:
+            return .blue
+        case .liveVerified:
+            return .green
+        case nil:
+            return BrandStyle.accent
+        }
     }
 
     @ViewBuilder
@@ -288,6 +410,161 @@ struct ProfileView: View {
                 .font(.subheadline)
                 .foregroundStyle(BrandStyle.textSecondary)
         }
+    }
+}
+
+private struct ActiveVerificationFlow: Identifiable {
+    let method: VerificationMethod
+    let attemptId: UUID
+    let clientToken: String
+
+    var id: UUID { attemptId }
+
+    var providerReferencePrefix: String {
+        switch method.methodKey {
+        case .ageVerified:
+            return "age_session"
+        case .liveVerified:
+            return "live_session"
+        case nil:
+            return "verification_session"
+        }
+    }
+}
+
+private struct ProfileVerificationRow: View {
+    let method: VerificationMethod
+    let tint: Color
+    let isLoading: Bool
+    let action: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: method.isVerified ? "checkmark.shield.fill" : "person.badge.shield.checkmark.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 42, height: 42)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(tint.opacity(0.12))
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(method.displayName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(BrandStyle.textPrimary)
+
+                if let action {
+                    Text(method.failureReason ?? "Complete verification to add this badge to your profile.")
+                        .font(.footnote)
+                        .foregroundStyle(BrandStyle.textSecondary)
+                } else {
+                    Text(method.failureReason ?? method.ineligibilityReason ?? method.displayStatus)
+                        .font(.footnote)
+                        .foregroundStyle(BrandStyle.textSecondary)
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            if let action {
+                Button(action: action) {
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Get \(method.displayName)")
+                            .font(.caption.weight(.semibold))
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(tint)
+                .disabled(isLoading)
+            } else {
+                SectionBadge(
+                    text: method.isVerified ? method.displayName : method.displayStatus,
+                    color: method.isVerified ? tint : BrandStyle.textSecondary,
+                    icon: method.isVerified ? "checkmark.seal.fill" : nil
+                )
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.48))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.white.opacity(0.42), lineWidth: 1)
+        )
+    }
+}
+
+private struct ProfileVerificationVendorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let flow: ActiveVerificationFlow
+    let onComplete: (String, String) -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(flow.method.displayName)
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(BrandStyle.textPrimary)
+
+                    Text("Vendor session started with client token:")
+                        .font(.subheadline)
+                        .foregroundStyle(BrandStyle.textSecondary)
+
+                    Text(flow.clientToken)
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(BrandStyle.textPrimary)
+                        .textSelection(.enabled)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.white.opacity(0.72))
+                        )
+                }
+
+                VStack(spacing: 12) {
+                    verificationActionButton(title: "Approve", tint: .green, decision: "approved")
+                    verificationActionButton(title: "Send To Review", tint: BrandStyle.accent, decision: "in_review")
+                    verificationActionButton(title: "Fail", tint: .red, decision: "failed")
+                }
+
+                Spacer()
+            }
+            .padding(20)
+            .background(ScreenBackdrop().ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func verificationActionButton(title: String, tint: Color, decision: String) -> some View {
+        Button {
+            onComplete(
+                decision,
+                "\(flow.providerReferencePrefix)_\(flow.attemptId.uuidString.lowercased().prefix(8))"
+            )
+        } label: {
+            Text(title)
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(tint)
     }
 }
 

@@ -1,6 +1,6 @@
 # IOSNative
 
-`IOSNative` is a separate, fully native iOS app scaffold built with SwiftUI. It talks to the same ASP.NET backend as the existing Expo app, but it does so with native iOS frameworks like `SwiftUI`, `URLSession`, `Security` (Keychain), and `CoreLocation`.
+`IOSNative` is a fully native iOS app scaffold built with SwiftUI. It talks to the ASP.NET backend with native iOS frameworks like `SwiftUI`, `URLSession`, `Security` (Keychain), and `CoreLocation`.
 
 ## What is included
 
@@ -28,5 +28,4 @@
 
 ## Current scope
 
-This scaffold is intentionally focused on the core authenticated flow and backend integration. It does not yet recreate every feature from the Expo app, such as real-time SignalR chat or photo uploads, but the project structure is ready for those native additions.
-
+This scaffold is intentionally focused on the core authenticated flow and backend integration, with the project structure ready for native additions such as real-time SignalR chat and photo uploads.

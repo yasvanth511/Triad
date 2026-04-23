@@ -1,323 +1,243 @@
-# Triad — Product Overview
+# Triad Product Overview
 
-## Table of Contents
+Triad is a dating and social discovery product built for a reality most platforms flatten away: some people date solo, some date as a couple, and some conversations need to stay group-aware from the very first interaction. Triad treats those cases as part of the core product instead of edge conditions.
 
-- [Who is Triad for?](#who-is-triad-for)
-- [The Core Idea](#the-core-idea)
-- [Getting Started](#getting-started)
-- [Your Profile](#your-profile)
-  - [Couple Profiles](#couple-profiles)
-- [Discovery](#discovery)
-- [Likes & Matching](#likes--matching)
-  - [Couple ↔ Single Match Flow](#couple--single-match-flow)
-- [Chat](#chat)
-- [Saved Profiles](#saved-profiles)
-- [Impress Me](#impress-me)
-- [Events](#events)
-- [Safety](#safety)
-- [Red Flags](#red-flags)
-- [Full User Journey](#full-user-journey)
-- [Key Principles](#key-principles)
-
----
-
-Triad is a dating and social discovery app built for a modern reality: not everyone is a single person looking for another single person. Triad is designed for **singles, couples, and group-aware connection** — letting people find compatible matches regardless of their relationship structure.
+## Product Thesis
 
----
-
-## Who is Triad for?
-
-- **Singles** looking for a partner, a couple, or a meaningful connection
-- **Established couples** who want to explore connections together as a unit
-- **Anyone** who wants to meet people at real local events, not just swipe endlessly
-
----
-
-## The Core Idea
-
-Most dating apps assume everyone is a single individual. Triad doesn't. A couple can create a shared profile, browse as a unit, and match with singles or other couples. The experience is built around **genuine self-expression** — profile photos, an audio bio you record in your own voice, short video highlights — and **intentional discovery** rather than infinite swiping.
-
----
-
-## Getting Started
-
-```mermaid
-flowchart TD
-    A([Open Triad]) --> B{Have an account?}
-    B -- No --> C[Register with name, email, password]
-    B -- Yes --> D[Log in]
-    C --> E[Profile created with defaults]
-    D --> F[Land on Discover feed]
-    E --> G[Fill out your profile]
-    G --> F
-```
-
-When you first sign up, Triad creates your profile with a default avatar. Before you start discovering others, you're encouraged to complete your profile so that people you encounter see the real you.
-
----
-
-## Your Profile
-
-Your profile is your identity on Triad. It's rich and expressive by design.
-
-```mermaid
-flowchart LR
-    P([Your Profile]) --> PH[Photos\nAdd up to 3 photos]
-    P --> AB[Audio Bio\nRecord a short voice intro]
-    P --> VB[Video Bio\nA short highlight clip]
-    P --> BI[Written Bio\nA few sentences about you]
-    P --> PR[Preferences\nAge range, intent, looking for]
-    P --> LO[Location\nCity, state, zip, radius]
-    P --> IN[Interests\nTags that describe you]
-    P --> RF[Red Flags\nDeal-breakers you want flagged]
-    P --> DP[Dating Preferences\nEthnicity, religion, lifestyle, etc.]
-```
-
-### Couple Profiles
-
-If you're part of a couple, one partner creates a couple account and shares an invite code with the other. Once both join, your profile represents you both. You browse and match together.
-
-```mermaid
-sequenceDiagram
-    participant P1 as Partner 1
-    participant App as Triad
-    participant P2 as Partner 2
-
-    P1->>App: Create couple account
-    App-->>P1: Generates invite code
-    P1->>P2: Shares invite code
-    P2->>App: Joins couple with invite code
-    App-->>P1: Couple linked ✓
-    App-->>P2: Couple linked ✓
-    Note over P1,P2: Both now browse as one couple profile
-```
-
----
-
-## Discovery
-
-The Discover tab is where you find people. Triad shows you cards — one at a time — from people near you.
-
-```mermaid
-flowchart TD
-    D([Open Discover]) --> F[Filter: All / Singles / Couples]
-    F --> C[Browse profile cards]
-    C --> V[View photos, bio, audio, video]
-    V --> CH{What do you want to do?}
-    CH -- Like --> L[Send a like]
-    CH -- Save --> S[Save for later]
-    CH -- Skip --> NK[Move to next card]
-    CH -- Impress Me --> IM[Send an Impress Me signal]
-    L --> ML{Did they like you back?}
-    ML -- Yes --> M[It's a Match!]
-    ML -- No --> W[Waiting...]
-    M --> CH2[Start chatting]
-```
-
-Discovery is location-aware. You set a radius on your profile, and Triad only surfaces people within that distance. People you've already liked, saved, or blocked never appear again.
-
----
-
-## Likes & Matching
-
-Triad uses mutual interest to unlock conversation. You like someone, they like you back — that's a match.
-
-```mermaid
-sequenceDiagram
-    participant A as You
-    participant App as Triad
-    participant B as Another User
-
-    A->>App: Like B's profile
-    App-->>A: Like recorded
-    B->>App: Like A's profile
-    App-->>A: 🎉 It's a Match!
-    App-->>B: 🎉 It's a Match!
-    Note over A,B: Chat thread opens for both
-```
-
-Couple-to-single and couple-to-couple matches are fully supported. When a couple matches with someone, the chat includes all members.
-
-### Couple ↔ Single Match Flow
-
-When a couple and a single person both like each other, Triad creates a shared match where the single person chats with both partners together.
-
-```mermaid
-sequenceDiagram
-    participant S as Single (Alex)
-    participant App as Triad
-    participant P1 as Partner 1 (Jordan)
-    participant P2 as Partner 2 (Taylor)
-
-    Note over P1,P2: Jordan & Taylor have a linked couple profile
-    S->>App: Likes the couple's profile
-    App-->>S: Like recorded
-    P1->>App: Couple likes Alex back
-    App-->>S: 🎉 It's a Match!
-    App-->>P1: 🎉 It's a Match!
-    App-->>P2: 🎉 It's a Match!
-    Note over S,P2: A single group chat thread opens
-    S->>App: Sends a message
-    App-->>P1: Message delivered
-    App-->>P2: Message delivered
-    P1->>App: Replies
-    App-->>S: Reply delivered
-    App-->>P2: Reply delivered
-```
-
-Both partners see every message in real time. Alex always knows they are talking to Jordan and Taylor together — there's no hidden side conversation. Either partner can view Alex's full profile from the chat at any time.
-
----
-
-## Chat
-
-Once matched, you and your match can chat directly inside the app. Messages are delivered in real time.
-
-```mermaid
-flowchart LR
-    M([A Match]) --> T[Open chat thread]
-    T --> TY[Type a message]
-    TY --> S[Send]
-    S --> R[Message delivered instantly]
-    R --> RE[Other side replies]
-    RE --> TY
-    T --> PD[Tap profile to view their full profile]
-    T --> UN[Unmatch if needed]
-```
-
----
-
-## Saved Profiles
-
-Not ready to like someone yet? Save them. The Saved tab is your personal shortlist — people you want to come back to.
-
-```mermaid
-flowchart TD
-    SV([Saved Tab]) --> SL[See your saved profiles]
-    SL --> OP[Open a profile]
-    OP --> ACT{Action}
-    ACT -- Like --> LK[Send a like from saved]
-    ACT -- Remove --> RM[Remove from saved]
-    ACT -- Message --> CH[Go to chat if matched]
-```
-
----
-
-## Impress Me
-
-Impress Me is Triad's way of breaking the ice before — or after — a match. Instead of a cold like, you can send a signal with a personal prompt. The other person responds, and if it sparks something, you can take it further.
-
-```mermaid
-flowchart TD
-    IM([Impress Me]) --> SEND[Send a signal to someone]
-    SEND --> PROMPT[They receive your prompt]
-    PROMPT --> RESP[They write a response]
-    RESP --> YOU[You review their response]
-    YOU --> DEC{Your decision}
-    DEC -- Accept --> MATCH[Match created]
-    DEC -- Decline --> END[Signal closes]
-    MATCH --> CHAT[Chat unlocked]
-```
-
-Impress Me works both before a match as a warm intro, and after a match as a conversation starter. It's built into your Impress tab in the app.
-
----
-
-## Events
-
-Triad connects you to real-world events happening near you — curated experiences where you might meet people in person, not just on a screen.
-
-```mermaid
-flowchart TD
-    EV([Events Tab]) --> LIST[Browse upcoming events near you]
-    LIST --> CARD[Tap an event]
-    CARD --> DET[See date, venue, description]
-    DET --> INT{Interested?}
-    INT -- Yes --> JOIN[Mark as Interested]
-    INT -- No --> BACK[Go back]
-    JOIN --> COUNT[Interested count goes up]
-    COUNT --> SOCIAL[See how many people are going]
-```
-
-Events are sorted by date and filtered by your location. You can toggle your interest on and off at any time.
-
----
-
-## Safety
-
-Triad takes safety seriously. If someone makes you uncomfortable, you have tools to protect yourself.
-
-```mermaid
-flowchart TD
-    SF([Feeling Unsafe?]) --> OPT{Choose an action}
-    OPT -- Block --> BL[Block the user]
-    OPT -- Report --> RP[Report with a reason]
-    BL --> GONE[They disappear from your feed and chat]
-    RP --> REV[Triad reviews the report]
-    REV --> ACT[Action taken if needed]
-```
-
-- **Blocking** someone removes them from your discovery feed, saved list, and any shared chats immediately.
-- **Reporting** sends the account for review. You can include a reason and any extra detail.
-- Triad also automatically detects and limits spam-like behaviour in messages and profile content.
-
----
-
-## Red Flags
-
-When you set red flags on your profile — things that are genuine deal-breakers for you — Triad highlights them when they appear in someone else's interests. It's a quiet, automatic heads-up so you can make more informed decisions without it feeling confrontational.
-
-```mermaid
-flowchart LR
-    RF([You set red flags]) --> DISC[You browse Discovery]
-    DISC --> CARD[A profile appears]
-    CARD --> CHECK{Do their interests match your red flags?}
-    CHECK -- Yes --> WARN[Flagged interests are highlighted in red]
-    CHECK -- No --> NORMAL[Profile shown normally]
-```
-
----
-
-## Full User Journey
-
-Here's the end-to-end experience from the moment someone downloads Triad to having a real conversation.
-
-```mermaid
-journey
-    title A Day on Triad
-    section Getting In
-      Download and open the app: 5: User
-      Register or log in: 5: User
-      Complete your profile: 4: User
-    section Discovering
-      Browse the Discover feed: 5: User
-      Listen to someone's audio bio: 5: User
-      Watch a video highlight: 5: User
-      Save a profile to revisit: 4: User
-      Like someone you're excited about: 5: User
-    section Connecting
-      Receive a like back — it's a match: 5: User
-      Open the chat thread: 5: User
-      Send your first message: 5: User
-      Exchange messages in real time: 5: User
-    section Going Further
-      Browse local events: 4: User
-      Mark an event as interested: 4: User
-      Send an Impress Me signal: 4: User
-      Accept a response and match: 5: User
-    section Staying Safe
-      Block or report if needed: 5: User
-      Red flags surface deal-breakers quietly: 4: User
-```
-
----
-
-## Key Principles
-
-**Inclusive by design.** Singles and couples are first-class citizens. The app adapts to your relationship structure, not the other way around.
-
-**Expression over swiping.** Audio bios, video highlights, and rich preferences give people a real sense of who you are before any conversation starts.
-
-**Safety first.** Blocking, reporting, anti-spam, and red flag detection are built into every layer of the experience.
-
-**Real-world connection.** Events bring the app into the physical world, creating opportunities to meet in person with shared context.
+Triad is currently shaped around five product beliefs:
+
+- singles and couples should both fit naturally into discovery, matching, and messaging
+- a profile should feel more expressive than a photo card and one-line bio
+- intent should have softer states than just swipe left or swipe right
+- trust should be visible through verification and safety signals
+- online discovery should connect to real-world interaction, not replace it
+
+## Who The Product Is For
+
+Triad is currently designed for:
+
+- singles looking for other singles or couples
+- couples who want to browse and match together
+- users who want more personality and context before opening a chat
+- users who want both app-based discovery and local event-based connection
+
+## Current Product Shape
+
+The live product in this repo has three main surfaces:
+
+- a backend-first platform in `ThirdWheel.API` that defines product behavior
+- a native SwiftUI iOS app that is the primary user-facing client in this repo
+- a lightweight admin dashboard for internal user, moderation, and geography views
+
+The consumer product itself is centered on the iOS app and API. The admin dashboard is operational support, not a primary end-user experience.
+
+## Core Experience
+
+### 1. Account Creation And Session
+
+Users register and log in with email and password. Successful authentication issues a JWT-backed session, and the iOS app persists that session in Keychain so returning users can re-enter the signed-in flow without logging in every launch.
+
+### 2. Rich Profiles
+
+Triad profiles are intentionally broader than a swipe card. A profile can currently include:
+
+- written bio
+- age range, intent, and looking-for preference
+- city, state, zip, coordinates, and radius
+- interests
+- red flags
+- audio bio
+- up to 5 photos
+- up to 3 ordered video highlights
+- detailed compatibility and lifestyle fields such as ethnicity, religion, relationship type, children, family plans, smoking, drinking, politics, education, physique, sexual preference, and comfort with intimacy
+
+The goal is to make first impressions feel more human and more legible before a conversation starts.
+
+### 3. Couple Accounts
+
+Couple support is a defining part of the product. One partner can create a couple record, receive an invite code, and have the second partner join. Once linked, Triad can treat that relationship as a couple-aware profile in discovery, matching, and messaging.
+
+This is not framed as two people sharing a generic account. The product logic understands that a match may involve more than one participant on one side of the connection.
+
+### 4. Discovery
+
+Discovery is the main browsing surface. Users can currently:
+
+- browse nearby profiles
+- filter between all users, singles, and couples
+- apply a distance cap
+- open full profile detail
+- like, save, or skip
+- use Impress Me as an alternate opening path
+
+The current backend also excludes blocked profiles and avoids repeatedly surfacing already actioned profiles, which helps the feed stay cleaner and more intentional.
+
+### 5. Saved Profiles
+
+Saved Profiles is the product's softer intent layer. It gives users a middle state between acting immediately and losing someone in the feed.
+
+Users can:
+
+- save from discovery
+- revisit saved people later
+- open full profile detail from the saved list
+- like or remove from the saved list
+
+This makes the product feel less disposable than a pure swipe mechanic.
+
+### 6. Likes, Matches, And Chat
+
+A mutual like creates a match. After that, users can message through the app.
+
+The current experience includes:
+
+- a match list
+- per-match message history
+- real-time chat through SignalR
+- REST-backed message loading and sending
+- unmatch support
+- group-aware participation when a couple is part of the match
+
+That last point matters. If a couple is involved, the resulting connection is treated as a shared interaction rather than forcing the product back into a purely one-to-one model.
+
+### 7. Notifications
+
+Triad includes an in-app notification layer so activity still feels alive when a user is not actively browsing.
+
+Users currently receive notifications for:
+
+- likes received
+- new matches
+- new messages
+- Impress Me challenges
+
+The iOS app surfaces unread counts, notification inbox access, per-item mark-read actions, and a mark-all-read action.
+
+### 8. Impress Me
+
+Impress Me is Triad's prompt-response interaction system. It gives the product a warmer opening than a plain like and can also be used after a match as a conversation nudge.
+
+The current flow supports:
+
+- sending a signal
+- inbox views for sent and received activity
+- summary and badge counts
+- receiver responses
+- sender review
+- sender accept or decline actions
+- both pre-match and post-match usage
+
+In the strongest version of the flow, Impress Me creates a lightweight challenge-response before chat opens, which makes first contact feel more personal and more intentional.
+
+### 9. Verification And Trust
+
+Triad now has a verification framework that goes beyond a single badge toggle. The system tracks eligibility, start and completion attempts, current status, failure reasons, verified timestamps, expiry where relevant, and profile-facing badge state.
+
+Configured verification methods currently include:
+
+- live verification
+- age verification
+- phone verification
+- couple verification
+- partner consent verification
+- intent verification
+- in-person verification
+- social verification
+
+The backend framework is broader than the current iOS presentation surface. The API already supports the full registry above, while the native profile experience currently exposes the verification layer in a more limited way.
+
+### 10. Events
+
+Triad is not only screen-first. The events layer gives the product a local, real-world extension.
+
+Users can currently:
+
+- browse upcoming events
+- view venue, location, and date details
+- see distance when location data is available
+- mark or remove interest
+
+Events are filtered against the user's effective discovery radius when both sides have usable coordinates.
+
+### 11. Safety
+
+Safety is embedded in the main product loop rather than hidden in settings.
+
+Current safety features include:
+
+- blocking
+- unblocking
+- reporting with a reason and optional detail
+- anti-spam checks on profile and message content
+- red-flag highlighting in profile detail
+
+The intended user outcome is simple: unwanted or unsafe interactions should be easy to stop and hard to resurface.
+
+## Current iOS App Shape
+
+The native app currently centers on:
+
+- Discover
+- Saved
+- Matches
+- Impress Me
+- Events via the tab shell
+- Notifications and Profile from the top-right navigation area
+
+The profile flow is now a fuller dedicated experience rather than a minimal modal. It includes editing for location, preferences, interests, red flags, media, and verification-aware profile details.
+
+## Operational Surface
+
+The repo also contains a lightweight admin dashboard used for internal visibility. It focuses on:
+
+- admin-safe user summaries
+- online user visibility
+- moderation analytics
+- coarse geography analytics
+
+This is important to the product's day-to-day operation, but it is not part of the core consumer experience or brand promise.
+
+## Current Business Rules
+
+Important product and platform limits currently include:
+
+- JWT session lifetime: 7 days
+- global API rate limit: 120 requests per 60 seconds per IP
+- max likes per day: 50
+- max profile photos: 5
+- max profile videos: 3
+- max audio bio size: 10 MB
+- max video size: 50 MB
+- max video duration: 60 seconds
+- bio max length: 500 characters
+- message max length: 2000 characters
+- anti-spam strike threshold: 3
+- repeated-message trigger: 3 identical messages within 5 minutes
+- Impress Me daily quota: 5
+- Impress Me max active outbound signals: 10
+- Impress Me response max length: 1000 characters
+- Impress Me expiry: 48 hours
+- live verification expiry: 365 days
+- age verification expiry: 365 days
+
+## What Makes The Current Build Distinct
+
+Triad's differentiation does not come from one isolated feature. It comes from the combination of:
+
+- couple-aware discovery and group-aware chat
+- richer self-expression through audio, video, and detailed preferences
+- softer intent states through saving and Impress Me
+- a visible trust layer through verification and safety signals
+- a real-world extension through local events
+
+The current build is aiming to feel more flexible, more expressive, and more intentional than a traditional swipe-only product while still keeping the main dating loops familiar enough to use quickly.
+
+## Current Reality Check
+
+The repo is meaningfully beyond a prototype, but it is still an actively evolving product. A few realities matter:
+
+- the backend is broader than the iOS surface in some areas, especially verification and operational tooling
+- the iOS app is the primary client in this repo; there is no equivalent Android or full consumer web app here
+- the admin dashboard is useful and real, but still lightweight
+
+That means Triad already has a strong product shape, but some capabilities are more mature at the platform level than at the end-user UI level.

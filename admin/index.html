@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Third Wheel Admin Control Center</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-kicker">Third Wheel</span>
+          <h1>Admin Control Center</h1>
+        </div>
+
+        <nav class="nav" aria-label="Admin sections">
+          <button class="nav-item is-active" data-page="users">Users</button>
+          <button class="nav-item" data-page="online-users">Online Users</button>
+          <button class="nav-item" data-page="geography-analytics">Geography Analytics</button>
+          <button class="nav-item" data-page="moderation-analytics">Moderation Analytics</button>
+        </nav>
+      </aside>
+
+      <div class="content-shell">
+        <header class="header">
+          <div>
+            <p class="eyebrow">Admin</p>
+            <h2 id="page-title">Users</h2>
+          </div>
+        </header>
+
+        <main class="main-content" id="page-content" aria-live="polite"></main>
+      </div>
+    </div>
+
+    <script>
+      window.ADMIN_API_BASE_URL =
+        window.ADMIN_API_BASE_URL ||
+        (window.location.port === "5173"
+          ? `${window.location.protocol}//${window.location.hostname}:5127`
+          : "");
+    </script>
+    <script src="./admin-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

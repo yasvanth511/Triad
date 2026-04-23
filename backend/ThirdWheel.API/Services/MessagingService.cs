@@ -9,11 +9,13 @@ public class MessagingService
 {
     private readonly AppDbContext _db;
     private readonly AntiSpamService _antiSpam;
+    private readonly NotificationService _notifications;
 
-    public MessagingService(AppDbContext db, AntiSpamService antiSpam)
+    public MessagingService(AppDbContext db, AntiSpamService antiSpam, NotificationService notifications)
     {
         _db = db;
         _antiSpam = antiSpam;
+        _notifications = notifications;
     }
 
     private sealed record SenderContext(Guid UserId, string Username, string? PhotoUrl, Guid? CoupleId, bool IsBanned);
@@ -48,6 +50,8 @@ public class MessagingService
 
             _db.Messages.Add(message);
             await _db.SaveChangesAsync();
+
+            try { await _notifications.NotifyMessageAsync(userId, matchId, content); } catch { }
 
             Telemetry.MessagesSent.Add(1,
                 new KeyValuePair<string, object?>("channel", "chat"));
