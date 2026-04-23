@@ -117,6 +117,35 @@ sequenceDiagram
 
 Couple-to-single and couple-to-couple matches are fully supported. When a couple matches with someone, the chat includes all members.
 
+### Couple ↔ Single Match Flow
+
+When a couple and a single person both like each other, Triad creates a shared match where the single person chats with both partners together.
+
+```mermaid
+sequenceDiagram
+    participant S as Single (Alex)
+    participant App as Triad
+    participant P1 as Partner 1 (Jordan)
+    participant P2 as Partner 2 (Taylor)
+
+    Note over P1,P2: Jordan & Taylor have a linked couple profile
+    S->>App: Likes the couple's profile
+    App-->>S: Like recorded
+    P1->>App: Couple likes Alex back
+    App-->>S: 🎉 It's a Match!
+    App-->>P1: 🎉 It's a Match!
+    App-->>P2: 🎉 It's a Match!
+    Note over S,P2: A single group chat thread opens
+    S->>App: Sends a message
+    App-->>P1: Message delivered
+    App-->>P2: Message delivered
+    P1->>App: Replies
+    App-->>S: Reply delivered
+    App-->>P2: Reply delivered
+```
+
+Both partners see every message in real time. Alex always knows they are talking to Jordan and Taylor together — there's no hidden side conversation. Either partner can view Alex's full profile from the chat at any time.
+
 ---
 
 ## Chat
