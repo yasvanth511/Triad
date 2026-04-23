@@ -5,13 +5,14 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/common/repo-root.sh"
 
 ROOT_DIR="$(repo_root_from_script "${BASH_SOURCE[0]}")"
 RUN_BACKEND=0
-RUN_UI=0
+RUN_ADMIN=0
+RUN_WEB=0
 RUN_IOS=0
 EXPLICIT_SELECTION=0
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/run/quick-build-deploy.sh [--backend] [--ui] [--ios] [--all] [--help]
+Usage: ./scripts/run/quick-build-deploy.sh [--backend] [--admin|--ui] [--web] [--ios] [--all] [--help]
 EOF
 }
 
@@ -24,9 +25,14 @@ run_backend() {
   "$ROOT_DIR/scripts/docker.sh" up
 }
 
-run_ui() {
-  log_layer "ui"
+run_admin() {
+  log_layer "admin"
   "$ROOT_DIR/scripts/docker.sh" up admin
+}
+
+run_web() {
+  log_layer "web"
+  "$ROOT_DIR/scripts/docker.sh" up web
 }
 
 run_ios() {
@@ -45,7 +51,15 @@ while [[ $# -gt 0 ]]; do
       EXPLICIT_SELECTION=1
       ;;
     --ui)
-      RUN_UI=1
+      RUN_ADMIN=1
+      EXPLICIT_SELECTION=1
+      ;;
+    --admin)
+      RUN_ADMIN=1
+      EXPLICIT_SELECTION=1
+      ;;
+    --web)
+      RUN_WEB=1
       EXPLICIT_SELECTION=1
       ;;
     --ios)
@@ -54,7 +68,8 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all)
       RUN_BACKEND=1
-      RUN_UI=1
+      RUN_ADMIN=1
+      RUN_WEB=1
       RUN_IOS=1
       EXPLICIT_SELECTION=1
       ;;
@@ -73,7 +88,8 @@ done
 
 if [[ "$EXPLICIT_SELECTION" == "0" ]]; then
   RUN_BACKEND=1
-  RUN_UI=1
+  RUN_ADMIN=1
+  RUN_WEB=1
   RUN_IOS=1
 fi
 
@@ -81,8 +97,12 @@ if [[ "$RUN_BACKEND" == "1" ]]; then
   run_backend
 fi
 
-if [[ "$RUN_UI" == "1" ]]; then
-  run_ui
+if [[ "$RUN_ADMIN" == "1" ]]; then
+  run_admin
+fi
+
+if [[ "$RUN_WEB" == "1" ]]; then
+  run_web
 fi
 
 if [[ "$RUN_IOS" == "1" ]]; then

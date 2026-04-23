@@ -11,6 +11,7 @@ The active surfaces in this repository are:
 - `backend/ThirdWheel.API`: ASP.NET Core 10 API with PostgreSQL, JWT auth, SignalR chat, local media storage, rate limiting, and OpenTelemetry
 - `IOSNative/ThirdWheelNative`: native SwiftUI iOS app used as the primary client in this repo
 - `admin/`: static admin dashboard shell for user, moderation, and geography views backed by `/api/admin/*`
+- `web/triad-web`: consumer-facing Next.js web app that mirrors the iOS product flows for desktop, tablet, and mobile web
 
 The backend is the source of truth for product behavior. The iOS app is the main end-user client here today.
 
@@ -21,6 +22,7 @@ Triad/
 ├── admin/                         # Static admin dashboard shell
 ├── backend/ThirdWheel.API/        # ASP.NET Core API
 ├── IOSNative/                     # Native SwiftUI app + Xcode project
+├── web/triad-web/                 # Consumer Next.js web app
 ├── scripts/
 │   ├── common/                    # Shared shell helpers
 │   ├── docker/docker.sh           # Docker helper commands
@@ -93,7 +95,19 @@ Useful local URL:
 
 - `http://localhost:5173`
 
-### 5. Run The Native iOS App
+### 5. Start The Consumer Web App
+
+```bash
+docker compose up -d --build web
+```
+
+Useful local URL:
+
+- `http://localhost:3000`
+
+The web container reads `WEB_PUBLIC_API_ORIGIN` at build time so browser traffic points at the correct API origin.
+
+### 6. Run The Native iOS App
 
 ```bash
 ./scripts/mobile/run-ios.sh
@@ -131,10 +145,24 @@ The test runner uses local `dotnet` when available and falls back to Docker with
 
 ```bash
 ./scripts/docker/docker.sh up
+./scripts/docker/docker.sh up admin
+./scripts/docker/docker.sh up web
 ./scripts/docker/docker.sh logs
+./scripts/docker/docker.sh logs web
 ./scripts/docker/docker.sh rebuild
+./scripts/docker/docker.sh rebuild web
 ./scripts/docker/docker.sh down
 ```
+
+### Quick Deploy Helpers
+
+```bash
+./scripts/run/quick-build-deploy.sh --backend --admin --web
+./scripts/run/quick-build-deploy.sh --web
+./redeploy.sh
+```
+
+`redeploy.sh` now defaults to the Docker-backed backend + admin + web stack and skips the iOS simulator unless you explicitly request it through `quick-build-deploy.sh`.
 
 ### Native iOS Build Only
 
@@ -237,6 +265,17 @@ Key app files:
 
 It is useful for internal demos and operations, but it is not a full production admin product yet.
 When started through Docker, the admin container serves the static dashboard and proxies `/api/*` requests to the `api` service.
+
+### Consumer Web Surface
+
+`web/triad-web/` is the responsive consumer-facing web app. It uses:
+
+- Next.js App Router
+- React + TypeScript
+- Tailwind CSS
+- Docker multi-stage builds with Next standalone output
+
+When started through Docker, it serves the consumer product on port `3000` by default.
 
 ## API And Realtime Surface
 

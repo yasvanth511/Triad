@@ -325,26 +325,59 @@ public class AdminController : BaseController
     {
         EnsureSeedAdminAccess();
 
+        const string preservedEmail = "yasvanth@live.in";
+
+        // Impress Me data uses a restrictive FK on ReceiverId, so clear it before users.
+        await _db.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM ""ImpressMeResponses""
+            WHERE ""SignalId"" IN (
+                SELECT ""Id"" FROM ""ImpressMeSignals""
+                WHERE ""SenderId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+                   OR ""ReceiverId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+            )
+        ");
+
+        await _db.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM ""ImpressMePrompts""
+            WHERE ""SignalId"" IN (
+                SELECT ""Id"" FROM ""ImpressMeSignals""
+                WHERE ""SenderId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+                   OR ""ReceiverId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+            )
+        ");
+
+        await _db.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM ""ImpressMeSignals""
+            WHERE ""SenderId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+               OR ""ReceiverId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+        ");
+
+        await _db.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM ""Notifications""
+            WHERE ""RecipientId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+               OR ""ActorId"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+        ");
+
         // Messages have no direct cascade from User — delete via Matches first
-        await _db.Database.ExecuteSqlRawAsync(@"
+        await _db.Database.ExecuteSqlRawAsync($@"
             DELETE FROM ""Messages""
             WHERE ""MatchId"" IN (
                 SELECT ""Id"" FROM ""Matches""
-                WHERE ""User1Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> 'yasvanth@live.in')
-                   OR ""User2Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> 'yasvanth@live.in')
+                WHERE ""User1Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+                   OR ""User2Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
             )
         ");
 
         // Match has no cascade from User — delete explicitly
-        await _db.Database.ExecuteSqlRawAsync(@"
+        await _db.Database.ExecuteSqlRawAsync($@"
             DELETE FROM ""Matches""
-            WHERE ""User1Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> 'yasvanth@live.in')
-               OR ""User2Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> 'yasvanth@live.in')
+            WHERE ""User1Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
+               OR ""User2Id"" IN (SELECT ""Id"" FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}')
         ");
 
         // Delete users (Photos, Interests, Likes, Blocks, SpamWarnings, EventInterests cascade)
-        var deletedUsers = await _db.Database.ExecuteSqlRawAsync(@"
-            DELETE FROM ""Users"" WHERE LOWER(""Email"") <> 'yasvanth@live.in'
+        var deletedUsers = await _db.Database.ExecuteSqlRawAsync($@"
+            DELETE FROM ""Users"" WHERE LOWER(""Email"") <> '{preservedEmail}'
         ");
 
         var deletedCouples = await _db.Database.ExecuteSqlRawAsync(@"

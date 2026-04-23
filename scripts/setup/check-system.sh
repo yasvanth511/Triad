@@ -17,6 +17,8 @@ check_tool() {
 printf 'Repo: %s\n' "$ROOT_DIR"
 check_tool curl
 check_tool docker
+check_tool node
+check_tool npm
 check_tool open
 check_tool xcodebuild
 check_tool xcrun

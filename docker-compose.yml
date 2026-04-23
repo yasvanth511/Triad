@@ -25,6 +25,24 @@ services:
     networks:
       - ipv6net
 
+  web:
+    image: ${WEB_IMAGE_NAME:-triad-web}:${WEB_IMAGE_TAG:-dev}
+    build:
+      context: ./web/triad-web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_ORIGIN: ${WEB_PUBLIC_API_ORIGIN:-http://localhost:5127}
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_ORIGIN: ${WEB_PUBLIC_API_ORIGIN:-http://localhost:5127}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks:
+      - ipv6net
+
 networks:
   ipv6net:
     enable_ipv6: true

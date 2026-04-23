@@ -7,16 +7,19 @@ ROOT_DIR="$(repo_root_from_script "${BASH_SOURCE[0]}")"
 COMMAND="${1:-help}"
 SERVICE="${2:-${DOCKER_SERVICE:-api}}"
 PROJECT_NAME="${DOCKER_PROJECT_NAME:-triad}"
-IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-api}"
-IMAGE_TAG="${DOCKER_IMAGE_TAG:-dev}"
-IMAGE_REF="${IMAGE_NAME}:${IMAGE_TAG}"
-CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-triad-api}"
 ENV_FILE="${DOCKER_ENV_FILE:-$ROOT_DIR/.env.docker}"
-BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/backend/ThirdWheel.API}"
-DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
-HOST_PORT="${API_PORT:-5127}"
-CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-5000}"
 UPLOADS_VOLUME="${DOCKER_UPLOADS_VOLUME:-triad_api_uploads}"
+IMAGE_NAME=""
+IMAGE_TAG=""
+IMAGE_REF=""
+CONTAINER_NAME=""
+BUILD_CONTEXT=""
+DOCKERFILE_PATH=""
+HOST_PORT=""
+CONTAINER_PORT=""
+REQUIRES_ENV_FILE=0
+BUILD_ARGS=()
+RUN_ARGS=()
 COMPOSE_FILE=""
 
 usage() {
@@ -36,10 +39,15 @@ Commands:
   deploy   Build and start detached for reuse in dev/staging
   help     Show this message
 
+Services:
+  api      ASP.NET Core backend
+  admin    Internal admin dashboard
+  web      Consumer Next.js web app
+
 Key env vars:
   DOCKER_ENV_FILE, DOCKER_IMAGE_NAME, DOCKER_IMAGE_TAG
   DOCKER_CONTAINER_NAME, DOCKER_PROJECT_NAME, DOCKER_SERVICE
-  DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT
+  DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT, ADMIN_PORT, WEB_PORT
 EOF
 }
 
@@ -75,6 +83,58 @@ ensure_env_file() {
   [[ -f "$ENV_FILE" ]] || fail "missing env file: $ENV_FILE (start from .env.docker.example)"
 }
 
+configure_service() {
+  case "$SERVICE" in
+    api)
+      IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-api}"
+      IMAGE_TAG="${DOCKER_IMAGE_TAG:-dev}"
+      CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-triad-api}"
+      BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/backend/ThirdWheel.API}"
+      DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
+      HOST_PORT="${API_PORT:-5127}"
+      CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-5000}"
+      REQUIRES_ENV_FILE=1
+      RUN_ARGS=(
+        --env-file "$ENV_FILE"
+        -v "${UPLOADS_VOLUME}:/app/uploads"
+      )
+      ;;
+    admin)
+      IMAGE_NAME="${ADMIN_IMAGE_NAME:-triad-admin}"
+      IMAGE_TAG="${ADMIN_IMAGE_TAG:-dev}"
+      CONTAINER_NAME="${ADMIN_CONTAINER_NAME:-triad-admin}"
+      BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/admin}"
+      DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
+      HOST_PORT="${ADMIN_PORT:-5173}"
+      CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-80}"
+      REQUIRES_ENV_FILE=0
+      ;;
+    web)
+      IMAGE_NAME="${WEB_IMAGE_NAME:-triad-web}"
+      IMAGE_TAG="${WEB_IMAGE_TAG:-dev}"
+      CONTAINER_NAME="${WEB_CONTAINER_NAME:-triad-web}"
+      BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/web/triad-web}"
+      DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
+      HOST_PORT="${WEB_PORT:-3000}"
+      CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-3000}"
+      REQUIRES_ENV_FILE=0
+      BUILD_ARGS=(
+        --build-arg "NEXT_PUBLIC_API_ORIGIN=${WEB_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT:-5127}}"
+      )
+      RUN_ARGS=(
+        -e "NEXT_PUBLIC_API_ORIGIN=${WEB_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT:-5127}}"
+        -e "PORT=${CONTAINER_PORT}"
+        -e "HOSTNAME=0.0.0.0"
+      )
+      ;;
+    *)
+      fail "unsupported service: $SERVICE (expected api, admin, or web)"
+      ;;
+  esac
+
+  IMAGE_REF="${IMAGE_NAME}:${IMAGE_TAG}"
+}
+
 compose_cmd() {
   [[ -n "$COMPOSE_FILE" ]] || fail "no compose file found"
   docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" "$@"
@@ -91,18 +151,28 @@ direct_container_exists() {
 
 export_runtime_env() {
   export DOCKER_ENV_FILE="$ENV_FILE"
-  export DOCKER_IMAGE_NAME="$IMAGE_NAME"
-  export DOCKER_IMAGE_TAG="$IMAGE_TAG"
-  export API_PORT="$HOST_PORT"
+  export DOCKER_IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-api}"
+  export DOCKER_IMAGE_TAG="${DOCKER_IMAGE_TAG:-dev}"
+  export ADMIN_IMAGE_NAME="${ADMIN_IMAGE_NAME:-triad-admin}"
+  export ADMIN_IMAGE_TAG="${ADMIN_IMAGE_TAG:-dev}"
+  export WEB_IMAGE_NAME="${WEB_IMAGE_NAME:-triad-web}"
+  export WEB_IMAGE_TAG="${WEB_IMAGE_TAG:-dev}"
+  export API_PORT="${API_PORT:-5127}"
+  export ADMIN_PORT="${ADMIN_PORT:-5173}"
+  export WEB_PORT="${WEB_PORT:-3000}"
+  export WEB_PUBLIC_API_ORIGIN="${WEB_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT}}"
 }
 
 build_image() {
   log "Building $IMAGE_REF"
-  docker build -t "$IMAGE_REF" -f "$DOCKERFILE_PATH" "$BUILD_CONTEXT"
+  docker build "${BUILD_ARGS[@]}" -t "$IMAGE_REF" -f "$DOCKERFILE_PATH" "$BUILD_CONTEXT"
 }
 
 run_direct() {
-  ensure_env_file
+  if [[ "$REQUIRES_ENV_FILE" == "1" ]]; then
+    ensure_env_file
+  fi
+
   if ! docker image inspect "$IMAGE_REF" >/dev/null 2>&1; then
     build_image
   fi
@@ -116,14 +186,15 @@ run_direct() {
   docker run -d \
     --name "$CONTAINER_NAME" \
     --restart unless-stopped \
-    --env-file "$ENV_FILE" \
     -p "${HOST_PORT}:${CONTAINER_PORT}" \
-    -v "${UPLOADS_VOLUME}:/app/uploads" \
+    "${RUN_ARGS[@]}" \
     "$IMAGE_REF"
 }
 
 compose_up() {
-  ensure_env_file
+  if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" ]]; then
+    ensure_env_file
+  fi
   export_runtime_env
   log "Starting compose service $SERVICE"
   compose_cmd up -d --build "$SERVICE"
@@ -201,7 +272,9 @@ restart_all() {
 
 rebuild_all() {
   if [[ -n "$COMPOSE_FILE" ]]; then
-    ensure_env_file
+    if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" ]]; then
+      ensure_env_file
+    fi
     export_runtime_env
     log "Rebuilding compose service $SERVICE"
     compose_cmd up -d --build --force-recreate "$SERVICE"
@@ -228,6 +301,7 @@ deploy_all() {
 main() {
   require_tool docker
   detect_compose_file
+  configure_service
 
   case "$COMMAND" in
     build)
