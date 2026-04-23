@@ -164,6 +164,47 @@ The test runner uses local `dotnet` when available and falls back to Docker with
 
 `redeploy.sh` now defaults to the Docker-backed backend + admin + web stack and skips the iOS simulator unless you explicitly request it through `quick-build-deploy.sh`.
 
+## Cloud Deployment
+
+This repo now includes deploy scripts for the three active surfaces:
+
+- `./scripts/deploy/backend-api.sh`: builds the ASP.NET API container, pushes it to your OCI registry, and can run a release hook
+- `./scripts/deploy/web-app.sh`: deploys `web/triad-web` to Vercel
+- `./scripts/deploy/admin-app.sh`: deploys `admin/nextjs-admin` to Vercel and generates the `/api/*` rewrite needed by the static export
+- `./scripts/deploy/deploy.sh`: runs the full sequence for backend + web + admin
+
+Start from the example env file:
+
+```bash
+cp scripts/deploy/deploy.env.example .env.deploy
+```
+
+Then export the values you need, for example:
+
+```bash
+set -a
+source .env.deploy
+set +a
+```
+
+Production deploy:
+
+```bash
+./scripts/deploy/deploy.sh --all --prod
+```
+
+Preview deploy for the two Vercel apps:
+
+```bash
+./scripts/deploy/deploy.sh --web --admin --preview
+```
+
+Notes:
+
+- The backend API is not deployed to Vercel in this setup. Vercel is a good fit for the Next.js web/admin apps, but the current ASP.NET Core API is packaged and deployed as a container instead.
+- If `web/triad-web` or `admin/nextjs-admin` are not linked to Vercel yet, set `TRIAD_WEB_VERCEL_PROJECT`, `TRIAD_ADMIN_VERCEL_PROJECT`, and optionally `TRIAD_VERCEL_SCOPE`. The scripts will run `vercel link --yes` for you.
+- `BACKEND_RELEASE_COMMAND` is intentionally provider-agnostic. Use it to trigger your host-specific rollout after the image push succeeds.
+
 ### Native iOS Build Only
 
 ```bash
