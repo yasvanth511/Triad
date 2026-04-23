@@ -3,18 +3,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Heart, MapPin, SkipForward, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ScreenHeader } from "@/components/app/screen-header";
 import { ProfilePreviewCard } from "@/components/domain/profile-preview-card";
 import { useSession } from "@/components/providers/session-provider";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateBanner } from "@/components/ui/state-banner";
-import { getDiscovery, likeProfile, saveProfile } from "@/lib/api/services";
+import { getDiscovery, likeProfile, saveProfile, updateProfile as updateProfileRequest } from "@/lib/api/services";
 import type { Audience, DiscoveryCard } from "@/lib/types";
 
 const audienceOptions: Array<{ label: string; value: Audience }> = [
@@ -25,10 +24,11 @@ const audienceOptions: Array<{ label: string; value: Audience }> = [
 
 export function DiscoverScreen() {
   const queryClient = useQueryClient();
-  const { token, currentUser } = useSession();
+  const { token } = useSession();
   const [audience, setAudience] = useState<Audience>("all");
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const hasAttemptedAutoLocation = useRef(false);
 
   const discoveryQuery = useQuery({
     queryKey: ["discover", audience, token],
@@ -62,7 +62,44 @@ export function DiscoverScreen() {
     () => (discoveryQuery.data || []).filter((card) => !hiddenIds.includes(card.userId)),
     [discoveryQuery.data, hiddenIds],
   );
-  const viewerRedFlags = new Set((currentUser?.redFlags || []).map((item) => item.toLowerCase()));
+  const viewerRedFlags = new Set<string>();
+
+  useEffect(() => {
+    if (!token || hasAttemptedAutoLocation.current) {
+      return;
+    }
+
+    hasAttemptedAutoLocation.current = true;
+    void syncBrowserLocation("auto");
+  }, [token]);
+
+  const syncBrowserLocation = useEffectEvent(async (trigger: "auto" | "manual") => {
+    if (!token) {
+      return;
+    }
+
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      return;
+    }
+
+    const permissionState = await getPermissionState();
+    if (permissionState === "denied") {
+      return;
+    }
+
+    try {
+      const position = await getCurrentBrowserPosition();
+      const latitude = roundCoordinate(position.coords.latitude);
+      const longitude = roundCoordinate(position.coords.longitude);
+
+      await updateProfileRequest(token, { latitude, longitude });
+      await queryClient.invalidateQueries({ queryKey: ["discover"] });
+    } catch (error) {
+      if (trigger === "manual" && !isPermissionDenied(error)) {
+        toast.error(error instanceof Error ? error.message : "Location request failed.");
+      }
+    }
+  });
 
   return (
     <div className="space-y-5">
@@ -73,12 +110,6 @@ export function DiscoverScreen() {
 
       <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-5">
-          <StateBanner
-            title="Location Adaptation"
-            tone="blue"
-            message="TODO: native CoreLocation permission flow should become a web geolocation prompt plus profile-location fallback. Discovery currently relies on the profile location already stored in the API."
-          />
-
           <div className="glass-panel rounded-[28px] p-5">
             <p className="mb-3 text-sm font-semibold text-[var(--color-ink)]">Audience</p>
             <div className="grid grid-cols-3 gap-2">
@@ -208,4 +239,40 @@ function DiscoverySkeleton() {
       ))}
     </div>
   );
+}
+
+async function getPermissionState(): Promise<PermissionState | "unsupported"> {
+  if (typeof navigator === "undefined" || !("permissions" in navigator) || !navigator.permissions?.query) {
+    return "unsupported";
+  }
+
+  try {
+    const result = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+    return result.state;
+  } catch {
+    return "unsupported";
+  }
+}
+
+function getCurrentBrowserPosition() {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      timeout: 10_000,
+      maximumAge: 300_000,
+    });
+  });
+}
+
+function isPermissionDenied(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    Number((error as { code?: unknown }).code) === 1
+  );
+}
+
+function roundCoordinate(value: number) {
+  return Math.round(value * 100) / 100;
 }

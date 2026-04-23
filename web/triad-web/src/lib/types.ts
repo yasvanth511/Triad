@@ -241,6 +241,8 @@ export interface UpdateProfileRequest {
   intent?: string;
   lookingFor?: string;
   interests?: string[];
+  latitude?: number;
+  longitude?: number;
   city?: string;
   state?: string;
   zipCode?: string;
