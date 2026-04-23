@@ -9,7 +9,9 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<UserPhoto> UserPhotos => Set<UserPhoto>();
+    public DbSet<UserVideo> UserVideos => Set<UserVideo>();
     public DbSet<UserInterest> UserInterests => Set<UserInterest>();
+    public DbSet<UserRedFlag> UserRedFlags => Set<UserRedFlag>();
     public DbSet<Couple> Couples => Set<Couple>();
     public DbSet<Like> Likes => Set<Like>();
     public DbSet<SavedProfile> SavedProfiles => Set<SavedProfile>();
@@ -20,6 +22,9 @@ public class AppDbContext : DbContext
     public DbSet<SpamWarning> SpamWarnings => Set<SpamWarning>();
     public DbSet<Event> Events => Set<Event>();
     public DbSet<EventInterest> EventInterests => Set<EventInterest>();
+    public DbSet<ImpressMeSignal> ImpressMeSignals => Set<ImpressMeSignal>();
+    public DbSet<ImpressMePrompt> ImpressMePrompts => Set<ImpressMePrompt>();
+    public DbSet<ImpressMeResponse> ImpressMeResponses => Set<ImpressMeResponse>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,12 +53,33 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // Videos
+        modelBuilder.Entity<UserVideo>(e =>
+        {
+            e.Property(v => v.Url)
+                .HasColumnType("text");
+
+            e.HasOne(v => v.User)
+                .WithMany(u => u.Videos)
+                .HasForeignKey(v => v.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // Interests
         modelBuilder.Entity<UserInterest>(e =>
         {
             e.HasOne(i => i.User)
                 .WithMany(u => u.Interests)
                 .HasForeignKey(i => i.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Red Flags
+        modelBuilder.Entity<UserRedFlag>(e =>
+        {
+            e.HasOne(r => r.User)
+                .WithMany(u => u.RedFlags)
+                .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -71,6 +97,7 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(l => new { l.FromUserId, l.ToUserId }).IsUnique();
+            e.HasIndex(l => new { l.FromUserId, l.CreatedAt });
         });
 
         // Saved Profiles
@@ -87,12 +114,17 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(s => new { s.UserId, s.SavedUserId }).IsUnique();
+            e.HasIndex(s => new { s.UserId, s.CreatedAt });
         });
 
         // Match
         modelBuilder.Entity<Match>(e =>
         {
             e.HasIndex(m => new { m.User1Id, m.User2Id }).IsUnique();
+            e.HasIndex(m => new { m.User1Id, m.CreatedAt });
+            e.HasIndex(m => new { m.User2Id, m.CreatedAt });
+            e.HasIndex(m => new { m.Couple1Id, m.CreatedAt });
+            e.HasIndex(m => new { m.Couple2Id, m.CreatedAt });
         });
 
         // Message
@@ -104,6 +136,8 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(m => m.MatchId);
+            e.HasIndex(m => new { m.MatchId, m.SentAt });
+            e.HasIndex(m => new { m.SenderId, m.SentAt });
         });
 
         // Block
@@ -148,6 +182,39 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.Longitude)
             .HasPrecision(10, 2);
+
+        modelBuilder.Entity<Event>()
+            .HasIndex(e => e.EventDate);
+
+        // ImpressMe
+        modelBuilder.Entity<ImpressMeSignal>(e =>
+        {
+            e.HasOne(s => s.Sender)
+                .WithMany()
+                .HasForeignKey(s => s.SenderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(s => s.Receiver)
+                .WithMany()
+                .HasForeignKey(s => s.ReceiverId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(s => s.Prompt)
+                .WithOne(p => p.Signal)
+                .HasForeignKey<ImpressMePrompt>(p => p.SignalId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(s => s.Response)
+                .WithOne(r => r.Signal)
+                .HasForeignKey<ImpressMeResponse>(r => r.SignalId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Efficient lookups for inbox, sent, and expiry sweeps
+            e.HasIndex(s => new { s.ReceiverId, s.CreatedAt });
+            e.HasIndex(s => new { s.SenderId,   s.CreatedAt });
+            e.HasIndex(s => new { s.SenderId, s.ReceiverId, s.Status });
+            e.HasIndex(s => s.ExpiresAt);
+        });
 
         // EventInterest unique constraint
         modelBuilder.Entity<EventInterest>(e =>

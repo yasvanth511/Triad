@@ -116,6 +116,7 @@ public class MatchingService
                 .FirstOrDefaultAsync();
 
             var matches = await _db.Matches
+                .AsNoTracking()
                 .Where(m => m.IsActive &&
                     (m.User1Id == userId || m.User2Id == userId ||
                      (userCoupleId != null &&
@@ -152,6 +153,7 @@ public class MatchingService
 
             // Single bulk user fetch with photos
             var userMap = await _db.Users
+                .AsNoTracking()
                 .Include(u => u.Photos)
                 .Where(u => allUserIds.Contains(u.Id))
                 .ToDictionaryAsync(u => u.Id);
@@ -241,7 +243,9 @@ public class MatchingService
     /// <summary>Returns all user IDs who are participants in a match (User1, User2, and any couple partners).</summary>
     public async Task<HashSet<Guid>> GetMatchParticipantIdsAsync(Guid matchId)
     {
-        var match = await _db.Matches.FindAsync(matchId)
+        var match = await _db.Matches
+            .AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == matchId)
             ?? throw new KeyNotFoundException("Match not found.");
 
         return await ResolveAllParticipantIdsAsync(match);
@@ -254,6 +258,7 @@ public class MatchingService
         var otherIds = allIds.Where(id => id != selfUserId).ToList();
 
         var users = await _db.Users
+            .AsNoTracking()
             .Include(u => u.Photos)
             .Where(u => otherIds.Contains(u.Id))
             .ToListAsync();

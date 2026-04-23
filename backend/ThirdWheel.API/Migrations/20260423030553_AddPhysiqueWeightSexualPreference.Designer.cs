@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ThirdWheel.API.Data;
@@ -11,9 +12,11 @@ using ThirdWheel.API.Data;
 namespace ThirdWheel.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260423030553_AddPhysiqueWeightSexualPreference")]
+    partial class AddPhysiqueWeightSexualPreference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -150,119 +153,6 @@ namespace ThirdWheel.API.Migrations
                         .IsUnique();
 
                     b.ToTable("EventInterests");
-                });
-
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMePrompt", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("PromptText")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("SenderContext")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<Guid>("SignalId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SignalId")
-                        .IsUnique();
-
-                    b.ToTable("ImpressMePrompts");
-                });
-
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMeResponse", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("MediaType")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("MediaUrl")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<Guid>("SignalId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("TextContent")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SignalId")
-                        .IsUnique();
-
-                    b.ToTable("ImpressMeResponses");
-                });
-
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMeSignal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Flow")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("MatchId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ReceiverId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("RespondedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("SenderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ViewedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExpiresAt");
-
-                    b.HasIndex("ReceiverId", "CreatedAt");
-
-                    b.HasIndex("SenderId", "CreatedAt");
-
-                    b.HasIndex("SenderId", "ReceiverId", "Status");
-
-                    b.ToTable("ImpressMeSignals");
                 });
 
             modelBuilder.Entity("ThirdWheel.API.Models.Like", b =>
@@ -489,10 +379,6 @@ namespace ThirdWheel.API.Migrations
 
                     b.Property<string>("City")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("ComfortWithIntimacy")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -766,47 +652,6 @@ namespace ThirdWheel.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMePrompt", b =>
-                {
-                    b.HasOne("ThirdWheel.API.Models.ImpressMeSignal", "Signal")
-                        .WithOne("Prompt")
-                        .HasForeignKey("ThirdWheel.API.Models.ImpressMePrompt", "SignalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Signal");
-                });
-
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMeResponse", b =>
-                {
-                    b.HasOne("ThirdWheel.API.Models.ImpressMeSignal", "Signal")
-                        .WithOne("Response")
-                        .HasForeignKey("ThirdWheel.API.Models.ImpressMeResponse", "SignalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Signal");
-                });
-
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMeSignal", b =>
-                {
-                    b.HasOne("ThirdWheel.API.Models.User", "Receiver")
-                        .WithMany()
-                        .HasForeignKey("ReceiverId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ThirdWheel.API.Models.User", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Receiver");
-
-                    b.Navigation("Sender");
-                });
-
             modelBuilder.Entity("ThirdWheel.API.Models.Like", b =>
                 {
                     b.HasOne("ThirdWheel.API.Models.User", "FromUser")
@@ -940,14 +785,6 @@ namespace ThirdWheel.API.Migrations
             modelBuilder.Entity("ThirdWheel.API.Models.Event", b =>
                 {
                     b.Navigation("Interests");
-                });
-
-            modelBuilder.Entity("ThirdWheel.API.Models.ImpressMeSignal", b =>
-                {
-                    b.Navigation("Prompt")
-                        .IsRequired();
-
-                    b.Navigation("Response");
                 });
 
             modelBuilder.Entity("ThirdWheel.API.Models.User", b =>

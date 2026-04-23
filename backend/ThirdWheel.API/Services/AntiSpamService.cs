@@ -15,7 +15,7 @@ public partial class AntiSpamService
 
     public AntiSpamService(AppDbContext db) => _db = db;
 
-    public async Task CheckMessageAsync(Guid userId, Guid matchId, string content)
+    public async Task CheckMessageAsync(Guid userId, Guid matchId, string content, bool? isUserBanned = null)
     {
         using var activity = Telemetry.ActivitySource.StartActivity("antispam.check_message");
         activity?.SetTag("enduser.id", userId);
@@ -23,11 +23,21 @@ public partial class AntiSpamService
 
         try
         {
-            var user = await _db.Users.FindAsync(userId)
-                ?? throw new KeyNotFoundException("User not found.");
-
-            if (user.IsBanned)
+            if (isUserBanned == true)
                 throw new InvalidOperationException("Account has been suspended.");
+
+            if (isUserBanned == null)
+            {
+                var userExists = await _db.Users
+                    .AsNoTracking()
+                    .Where(u => u.Id == userId)
+                    .Select(u => new { u.IsBanned })
+                    .FirstOrDefaultAsync()
+                    ?? throw new KeyNotFoundException("User not found.");
+
+                if (userExists.IsBanned)
+                    throw new InvalidOperationException("Account has been suspended.");
+            }
 
             if (ContainsLink(content))
             {

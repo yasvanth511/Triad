@@ -23,44 +23,34 @@ public class DiscoveryService
         try
         {
             var currentUser = await _db.Users
-                .Include(u => u.Couple)
+                .AsNoTracking()
+                .Select(u => new
+                {
+                    u.Id,
+                    u.CoupleId,
+                    u.RadiusMiles,
+                    u.Latitude,
+                    u.Longitude
+                })
                 .FirstOrDefaultAsync(u => u.Id == userId)
                 ?? throw new KeyNotFoundException("User not found.");
 
-            var blockedIds = await _db.Blocks
-                .Where(b => b.BlockerUserId == userId || b.BlockedUserId == userId)
-                .Select(b => b.BlockerUserId == userId ? b.BlockedUserId : b.BlockerUserId)
-                .ToListAsync();
-
-            var likedIds = await _db.Likes
-                .Where(l => l.FromUserId == userId)
-                .Select(l => l.ToUserId)
-                .ToListAsync();
-
-            var savedIds = await _db.SavedProfiles
-                .Where(s => s.UserId == userId)
-                .Select(s => s.SavedUserId)
-                .ToListAsync();
-
-            var excludeIds = blockedIds
-                .Concat(likedIds)
-                .Concat(savedIds)
-                .Append(userId)
-                .ToHashSet();
+            var query = _db.Users
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(u => u.Photos)
+                .Include(u => u.Interests)
+                .Where(u => u.Id != userId && !u.IsBanned)
+                .Where(u => !_db.Blocks.Any(b =>
+                    (b.BlockerUserId == userId && b.BlockedUserId == u.Id) ||
+                    (b.BlockedUserId == userId && b.BlockerUserId == u.Id)))
+                .Where(u => !_db.Likes.Any(l => l.FromUserId == userId && l.ToUserId == u.Id))
+                .Where(u => !_db.SavedProfiles.Any(s => s.UserId == userId && s.SavedUserId == u.Id));
 
             if (currentUser.CoupleId != null)
             {
-                var partnerIds = await _db.Users
-                    .Where(u => u.CoupleId == currentUser.CoupleId && u.Id != userId)
-                    .Select(u => u.Id)
-                    .ToListAsync();
-                foreach (var id in partnerIds) excludeIds.Add(id);
+                query = query.Where(u => u.CoupleId != currentUser.CoupleId);
             }
-
-            var query = _db.Users
-                .Include(u => u.Photos)
-                .Include(u => u.Interests)
-                .Where(u => !excludeIds.Contains(u.Id) && !u.IsBanned);
 
             if (filter.UserType == "single")
                 query = query.Where(u => u.CoupleId == null);

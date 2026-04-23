@@ -96,6 +96,9 @@ builder.Services.AddScoped<MessagingService>();
 builder.Services.AddScoped<SafetyService>();
 builder.Services.AddScoped<AntiSpamService>();
 builder.Services.AddScoped<EventService>();
+builder.Services.AddSingleton<ImageService>();
+builder.Services.AddScoped<PromptGeneratorService>();
+builder.Services.AddScoped<ImpressMeService>();
 
 // Controllers + SignalR
 builder.Services.AddControllers();
@@ -227,6 +230,7 @@ if (app.Environment.IsDevelopment())
 
         var users = await db.Users
             .Include(u => u.Photos)
+            .Include(u => u.Videos)
             .ToListAsync();
         var changed = false;
 
@@ -236,25 +240,97 @@ if (app.Environment.IsDevelopment())
                 .OrderBy(p => p.SortOrder)
                 .ThenBy(p => p.CreatedAt)
                 .ToList();
-            var primaryPhoto = orderedPhotos.FirstOrDefault();
+            var customPhotos = orderedPhotos
+                .Where(p => p.Url != DefaultProfilePhoto.DataUrl)
+                .ToList();
 
-            if (primaryPhoto == null)
+            if (customPhotos.Count == 0)
             {
-                db.UserPhotos.Add(DefaultProfilePhoto.Create(user.Id));
-                changed = true;
-                continue;
+                if (orderedPhotos.Count == 0)
+                {
+                    db.UserPhotos.Add(DefaultProfilePhoto.Create(user.Id));
+                    changed = true;
+                }
+                else
+                {
+                    var primaryPhoto = orderedPhotos.First();
+                    if (primaryPhoto.Url != DefaultProfilePhoto.DataUrl || primaryPhoto.SortOrder != 0)
+                    {
+                        primaryPhoto.Url = DefaultProfilePhoto.DataUrl;
+                        primaryPhoto.SortOrder = 0;
+                        changed = true;
+                    }
+
+                    if (orderedPhotos.Count > 1)
+                    {
+                        db.UserPhotos.RemoveRange(orderedPhotos.Skip(1));
+                        changed = true;
+                    }
+                }
+            }
+            else
+            {
+                var defaultPhotos = orderedPhotos.Where(p => p.Url == DefaultProfilePhoto.DataUrl).ToList();
+                if (defaultPhotos.Count > 0)
+                {
+                    db.UserPhotos.RemoveRange(defaultPhotos);
+                    changed = true;
+                }
+
+                foreach (var photo in customPhotos.Take(AppConstants.MaxPhotos).Select((photo, index) => new { photo, index }))
+                {
+                    if (photo.photo.SortOrder != photo.index)
+                    {
+                        photo.photo.SortOrder = photo.index;
+                        changed = true;
+                    }
+                }
+
+                if (customPhotos.Count > AppConstants.MaxPhotos)
+                {
+                    db.UserPhotos.RemoveRange(customPhotos.Skip(AppConstants.MaxPhotos));
+                    changed = true;
+                }
             }
 
-            if (primaryPhoto.Url != DefaultProfilePhoto.DataUrl || primaryPhoto.SortOrder != 0)
+            var orderedVideos = user.Videos
+                .OrderBy(v => v.SortOrder)
+                .ThenBy(v => v.CreatedAt)
+                .ToList();
+
+            if (orderedVideos.Count == 0 && !string.IsNullOrWhiteSpace(user.VideoBioUrl))
             {
-                primaryPhoto.Url = DefaultProfilePhoto.DataUrl;
-                primaryPhoto.SortOrder = 0;
+                var migratedVideo = new ThirdWheel.API.Models.UserVideo
+                {
+                    UserId = user.Id,
+                    Url = user.VideoBioUrl,
+                    SortOrder = 0
+                };
+                db.UserVideos.Add(migratedVideo);
+                orderedVideos.Add(migratedVideo);
                 changed = true;
             }
 
-            if (orderedPhotos.Count > 1)
+            foreach (var video in orderedVideos.Take(AppConstants.MaxVideos).Select((video, index) => new { video, index }))
             {
-                db.UserPhotos.RemoveRange(orderedPhotos.Skip(1));
+                if (video.video.SortOrder != video.index)
+                {
+                    video.video.SortOrder = video.index;
+                    changed = true;
+                }
+            }
+
+            if (orderedVideos.Count > AppConstants.MaxVideos)
+            {
+                db.UserVideos.RemoveRange(orderedVideos.Skip(AppConstants.MaxVideos));
+                orderedVideos = orderedVideos.Take(AppConstants.MaxVideos).ToList();
+                changed = true;
+            }
+
+            var primaryVideoUrl = orderedVideos.FirstOrDefault()?.Url;
+            if (user.VideoBioUrl != primaryVideoUrl)
+            {
+                user.VideoBioUrl = primaryVideoUrl;
                 changed = true;
             }
         }

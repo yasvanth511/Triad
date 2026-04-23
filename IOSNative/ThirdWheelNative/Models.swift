@@ -17,9 +17,72 @@ struct UserProfile: Codable, Identifiable {
     let zipCode: String
     let radiusMiles: Int?
     let couplePartnerName: String?
+    let audioBioUrl: String?
+    let videoBioUrl: String?
+    let videos: [ProfileVideo]
+    let redFlags: [String]?
+    // Dating Preferences
+    let interestedIn: String?
+    let neighborhood: String?
+    let ethnicity: String?
+    let religion: String?
+    let relationshipType: String?
+    let height: String?
+    let children: String?
+    let familyPlans: String?
+    let drugs: String?
+    let smoking: String?
+    let marijuana: String?
+    let drinking: String?
+    let politics: String?
+    let educationLevel: String?
+    let weight: String?
+    let physique: String?
+    let sexualPreference: String?
+    let comfortWithIntimacy: String?
+
+    var orderedPhotos: [Photo] {
+        photos.sorted {
+            if $0.sortOrder == $1.sortOrder {
+                return $0.id.uuidString < $1.id.uuidString
+            }
+            return $0.sortOrder < $1.sortOrder
+        }
+    }
+
+    var orderedVideos: [ProfileVideo] {
+        let sortedVideos = videos.sorted {
+            if $0.sortOrder == $1.sortOrder {
+                return $0.id.uuidString < $1.id.uuidString
+            }
+            return $0.sortOrder < $1.sortOrder
+        }
+
+        if !sortedVideos.isEmpty {
+            return sortedVideos
+        }
+
+        guard let videoBioUrl, !videoBioUrl.isEmpty else {
+            return []
+        }
+
+        return [
+            ProfileVideo(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000001") ?? UUID(),
+                url: videoBioUrl,
+                sortOrder: 0
+            )
+        ]
+    }
 }
 
 struct Photo: Codable, Identifiable {
+    let id: UUID
+    let url: String
+    let sortOrder: Int
+}
+
+struct ProfileVideo: Codable, Identifiable {
     let id: UUID
     let url: String
     let sortOrder: Int
@@ -54,6 +117,26 @@ struct UpdateProfileRequest: Encodable {
     let state: String?
     let zipCode: String?
     let radiusMiles: Int?
+    let redFlags: [String]?
+    // Dating Preferences
+    let interestedIn: String?
+    let neighborhood: String?
+    let ethnicity: String?
+    let religion: String?
+    let relationshipType: String?
+    let height: String?
+    let children: String?
+    let familyPlans: String?
+    let drugs: String?
+    let smoking: String?
+    let marijuana: String?
+    let drinking: String?
+    let politics: String?
+    let educationLevel: String?
+    let weight: String?
+    let physique: String?
+    let sexualPreference: String?
+    let comfortWithIntimacy: String?
 }
 
 struct DiscoveryCard: Codable, Identifiable {
@@ -174,6 +257,14 @@ struct LikeResult: Codable {
 struct APIErrorResponse: Decodable {
     let error: String?
     let message: String?
+}
+
+struct UploadAudioBioResponse: Decodable {
+    let url: String
+}
+
+struct UploadVideoBioResponse: Decodable {
+    let url: String
 }
 
 struct EmptyResponse: Decodable {}

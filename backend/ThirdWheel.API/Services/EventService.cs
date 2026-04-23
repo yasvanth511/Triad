@@ -19,12 +19,15 @@ public class EventService
 
         try
         {
-            var user = await _db.Users.FindAsync(userId)
+            var user = await _db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId)
                 ?? throw new KeyNotFoundException("User not found.");
 
             var now = DateTime.UtcNow;
 
             var events = await _db.Events
+                .AsNoTracking()
                 .Include(e => e.Interests)
                 .Where(e => e.EventDate >= now)
                 .OrderBy(e => e.EventDate)

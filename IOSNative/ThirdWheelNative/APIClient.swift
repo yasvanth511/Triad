@@ -50,6 +50,47 @@ final class APIClient {
         _ = try await perform(request) as EmptyResponse
     }
 
+    /// Upload a file using multipart/form-data.
+    /// - Parameters:
+    ///   - path: API path (e.g. "profile/audio-bio")
+    ///   - data: Raw file bytes
+    ///   - mimeType: MIME type string (e.g. "audio/mpeg")
+    ///   - fileName: File name sent in the Content-Disposition header
+    ///   - fieldName: Form field name expected by the server (default: "file")
+    func upload<T: Decodable>(
+        _ path: String,
+        data: Data,
+        mimeType: String,
+        fileName: String,
+        fieldName: String = "file"
+    ) async throws -> T {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var body = Data()
+
+        let normalizedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
+        let base = configuration.apiBaseURL.absoluteString.hasSuffix("/")
+            ? configuration.apiBaseURL.absoluteString
+            : configuration.apiBaseURL.absoluteString + "/"
+        guard let url = URL(string: base + normalizedPath) else { throw APIClientError.invalidURL }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let authToken {
+            request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+        return try await perform(request)
+    }
+
     private func makeRequest(path: String, method: String, queryItems: [URLQueryItem] = []) throws -> URLRequest {
         let normalizedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
         let base = configuration.apiBaseURL.absoluteString.hasSuffix("/")

@@ -1,526 +1,604 @@
-# Third Wheel
+# Triad
 
-A privacy-first, consent-driven mobile platform where singles connect with couples and couples connect with singles or other couples. Built with ASP.NET Core 10, React Native (Expo), PostgreSQL, SignalR real-time chat, and full OpenTelemetry observability.
+Triad is a dating and social discovery platform built around singles, couples, and group-aware matching. The repo currently contains:
 
----
+- an ASP.NET Core 10 backend API in `backend/ThirdWheel.API`
+- a native SwiftUI iOS client in `IOSNative/ThirdWheelNative`
+- an Expo / React Native client in `mobile/` that still lives in the repo as a parallel client
 
-## Vision
-
-Modern dating apps focus exclusively on 1:1 connections. **Third Wheel** breaks that mold by treating *couples as first-class participants* — singles can match with couples, couples can match with singles or other couples, and group chats form naturally when a couple matches. The platform prioritizes:
-
-- **Privacy by design** — location rounded to ~1 km, EXIF data stripped from photos, alias-only identities
-- **Consent-driven matching** — mutual likes required; one-way blocks are invisible to the blocked party
-- **Safety at scale** — progressive anti-spam system, link/keyword blocking, automated account suspension
-- **Observability from day one** — OpenTelemetry traces, metrics, and logs across backend and mobile
+The backend is the shared source of truth. The native iOS app is where most recent product work has landed.
 
 ---
 
-## Architecture
+## Repo Layout
 
-```
-ThirdWheel/
-├── backend/ThirdWheel.API/        # ASP.NET Core 10 Web API
-│   ├── Controllers/               # 10 REST controllers
-│   ├── Data/                      # EF Core DbContext + PostgreSQL
-│   ├── DTOs/                      # Request / Response models
-│   ├── Helpers/                   # GeoUtils (Haversine), UserMapper
-│   ├── Hubs/                      # SignalR ChatHub (real-time messaging)
-│   ├── Migrations/                # EF Core code-first migrations
-│   ├── Models/                    # 12 database entities
-│   └── Services/                  # 10 business-logic services
-├── mobile/                        # React Native (Expo SDK 52)
-│   ├── app/                       # Expo Router file-based screens
-│   │   ├── auth/                  # Login / Register
-│   │   ├── tabs/                  # Discover / Matches / Events / Profile
-│   │   └── chat/                  # Real-time chat ([matchId])
-│   └── src/
-│       ├── contexts/              # AuthContext (JWT + SecureStore)
-│       ├── services/              # API client, SignalR client, OpenTelemetry
-│       ├── utils/                 # Photo URL builder
-│       ├── constants.ts           # API URLs, color palette
-│       ├── styles.ts              # Shared style system
-│       └── types.ts               # TypeScript interfaces
-├── docker-compose.yml             # PostgreSQL + API (Docker)
-├── seed.ps1                       # PowerShell seed script (100 users)
-└── NuGet.Config                   # Package source config
+```text
+Triad/
+├── backend/ThirdWheel.API/        # ASP.NET Core 10 API + SignalR + EF Core
+├── IOSNative/                     # Native SwiftUI iOS app
+│   ├── ThirdWheelNative/          # App source
+│   └── ThirdWheelNative.xcodeproj
+├── mobile/                        # Expo / React Native client
+├── docker-compose.yml             # Local API container
+├── seed.ps1                       # Demo data + events seeding
+└── redeploy.sh                    # Rebuild API + iOS simulator app
 ```
 
-### Technology Stack
+---
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Backend | .NET 10 / ASP.NET Core | REST API, authentication, business logic |
-| Database | PostgreSQL (Supabase) | Relational data, EF Core ORM |
-| Real-time | SignalR | WebSocket chat with automatic fallback |
-| Auth | JWT (HS256) | Stateless tokens, 7-day expiry |
-| Mobile | React Native + Expo (SDK 52) | Cross-platform iOS/Android app |
-| Navigation | Expo Router v4 | File-based routing |
-| Observability | OpenTelemetry 1.12 | Distributed traces, metrics, structured logs |
-| Image Processing | SixLabors.ImageSharp | EXIF stripping, resize, format conversion |
-| Location | Haversine formula | Distance calculation without external services |
+## Current Product Scope
+
+### Backend API
+
+The API currently provides:
+
+- JWT auth with registration and login
+- profile read/update/delete
+- multi-photo profile media
+- audio bio and video/highlight uploads
+- discovery feed for singles and couples
+- saved profiles
+- likes, matches, and unmatch
+- REST messaging plus SignalR chat
+- safety actions: block and report
+- local events and interest toggling
+- admin seed endpoints
+- Impress Me prompt / response flow
+- Swagger / OpenAPI in development
+
+### Native iOS App
+
+The SwiftUI app currently includes:
+
+- login and registration
+- Discover, Saved, Matches, Impress Me, and Events tabs
+- profile access from the top-right account button
+- dedicated profile edit screen pushed in navigation
+- Instagram-style profile media editing:
+  - photo grid management
+  - story-style highlight bubbles for videos
+- profile detail pages from discovery, saved profiles, and matches/chat
+- saved profiles revisit flow
+- chat screens
+- event browsing
+- native location permission handling
+- session persistence
+
+### Expo App
+
+The Expo app is still present in `mobile/` and talks to the same backend, but the most up-to-date feature work in this repo is reflected in the native iOS app.
 
 ---
 
-## Features
+## Backend Overview
 
-### Discovery & Matching
+### Core Stack
 
-- **Swipeable card interface** with glassmorphism design
-- **Filter by type**: All / Singles / Couples
-- **Mutual-like matching** — both parties must like to create a match
-- **50 likes/day** rolling limit to prevent spam swiping
-- **Distance-aware** — Haversine calculation with user-configurable radius (5–50 miles)
-- **Smart exclusions** — hides blocked users, already-liked users, banned accounts, incomplete profiles
+| Area | Tech |
+|---|---|
+| API | ASP.NET Core 10 |
+| ORM | Entity Framework Core 10 + Npgsql |
+| Database | PostgreSQL |
+| Auth | JWT bearer tokens |
+| Realtime | SignalR |
+| Media processing | SixLabors.ImageSharp |
+| Observability | OpenTelemetry |
+| API docs | OpenAPI + Swagger UI |
 
-### Couple System
+### Main Backend Folders
 
-- **Create a couple** — generates a unique 8-character invite code (cryptographically random, excludes ambiguous chars O/I/L/1/0)
-- **Join via code** — partner enters the invite code to link accounts
-- **Couple discovery** — couples appear as a unit in the discovery feed
-- **Group chat** — when a couple matches with a user, all 3 (or 4) participants share one chat thread
-- **Leave couple** — either member can leave; couple is deleted if only one remains
+| Path | Purpose |
+|---|---|
+| `Controllers/` | HTTP endpoints |
+| `Services/` | business logic |
+| `Models/` | EF Core entities |
+| `DTOs/` | request / response models |
+| `Data/` | `AppDbContext` |
+| `Helpers/` | mapping, geo helpers, default media helpers |
+| `Hubs/` | SignalR hub |
+| `Migrations/` | schema history |
 
-### Real-time Chat
+### Key Backend Features
 
-- **SignalR WebSocket** with automatic reconnection
-- **Group architecture** — per-match groups (`match_{matchId}`) for broadcast
-- **Read receipts** — `MarkRead` broadcasts to all participants
-- **REST fallback** — if SignalR connection drops, messages send via HTTP POST
-- **Anti-spam integration** — messages checked for keywords, links, and repetition before delivery
-
-### Events
-
-- **Upcoming events** filtered by user location and radius
-- **Interest toggle** — express interest with a tap; see who else is interested
-- **Event details** — title, description, venue, date, banner image
-- **Pull-to-refresh** and share functionality
-
-### Profile Management
-
-- **Photo gallery** — up to 3 photos per user (JPEG/PNG/WebP, max 5 MB)
-- **EXIF/IPTC/XMP metadata auto-stripped** on upload
-- **Auto-resize** — images wider than 1200 px are scaled down
-- **Bio, age range, intent** (casual / serious / friendship / exploring)
-- **Interest tags** — free-form tags for matching affinity
-- **Location** — city, state, zip, coordinates (rounded for privacy)
-
-### Safety & Privacy
-
-| Feature | Implementation |
-|---------|---------------|
-| Location privacy | Coordinates stored with 2 decimal places (~1 km grid) |
-| Photo privacy | All EXIF, IPTC, XMP metadata stripped; auto-resized to JPEG |
-| Identity privacy | Alias-only usernames; real names never collected |
-| Link prevention | Regex blocks URLs in bios and messages (http, www, TLDs, t.me, bit.ly) |
-| Keyword filtering | Blocks spam terms: OnlyFans, Venmo, CashApp, Telegram, etc. |
-| Blocking | One-way block; unmatches existing matches; hides both users from each other |
-| Reporting | Reason + details submitted for moderation review |
-| Anti-spam escalation | Strike 1 → warn, Strike 2 → throttle, Strike 3 → account ban |
-| Repeated message detection | Same content 3+ times in 5 minutes triggers spam pipeline |
-
-### Observability (OpenTelemetry)
-
-**Backend** — traces, metrics, and logs with console + OTLP exporters:
-
-| Custom Metric | Type | Tags |
-|---------------|------|------|
-| `triad.auth.operations` | Counter | operation, outcome |
-| `triad.couple.operations` | Counter | operation, outcome |
-| `triad.discovery.requests` | Counter | outcome, user_type |
-| `triad.discovery.cards_returned` | Histogram | — |
-| `triad.match.operations` | Counter | operation, outcome |
-| `triad.messaging.sent` | Counter | channel |
-| `triad.messaging.fetched` | Histogram | — |
-| `triad.safety.operations` | Counter | operation |
-| `triad.profile.operations` | Counter | operation |
-| `triad.events.operations` | Counter | operation |
-| `triad.realtime.operations` | Counter | operation |
-
-Automatic instrumentation: ASP.NET Core, HTTP client, EF Core, .NET runtime.
-
-**Mobile** — W3C Trace Context propagation on all API calls and SignalR operations; console + OTLP HTTP trace export.
+- `AuthService` handles registration, login, password hashing, and JWT generation.
+- `ProfileService` manages profile data, media, dating preferences, red flags, and account deletion.
+- `DiscoveryService` filters hidden / blocked / already-liked / already-saved users and returns discovery cards.
+- `SavedProfileService` stores revisit-able profiles.
+- `MatchingService` creates matches and supports group-aware chat when couple accounts are involved.
+- `MessagingService` powers match chat over REST.
+- `SafetyService` handles block and report workflows.
+- `ImpressMeService` supports prompt-based pre-match and post-match interaction.
+- `EventService` handles local event listing and interest toggling.
 
 ---
 
-## Database Schema
+## Data Model Highlights
 
-```
-┌─────────────┐       ┌──────────────┐       ┌────────────┐
-│    User      │──────▶│  UserPhoto   │       │   Couple   │
-│              │──────▶│  UserInterest│       │            │
-│  (CoupleId?) │◀─────│              │       │ InviteCode │
-└──────┬───────┘       └──────────────┘       └─────┬──────┘
-       │                                            │
-       │  ┌──────┐    ┌───────┐    ┌────────┐      │
-       ├─▶│ Like │    │ Match │───▶│ Message│      │
-       │  └──────┘    └───────┘    └────────┘      │
-       │  ┌──────┐    ┌────────┐   ┌────────────┐  │
-       ├─▶│Block │    │ Report │   │ SpamWarning│  │
-       │  └──────┘    └────────┘   └────────────┘  │
-       │                                            │
-       │  ┌──────┐    ┌──────────────┐              │
-       └─▶│Event │───▶│EventInterest │              │
-          └──────┘    └──────────────┘              │
-```
+The data model now includes more than the original core dating entities. Important current entities include:
 
-### Entity Summary
+- `User`
+- `UserPhoto`
+- `UserVideo`
+- `UserInterest`
+- `UserRedFlag`
+- `Couple`
+- `SavedProfile`
+- `Like`
+- `Match`
+- `Message`
+- `Block`
+- `Report`
+- `SpamWarning`
+- `Event`
+- `EventInterest`
+- `ImpressMePrompt`
+- `ImpressMeSignal`
+- `ImpressMeResponse`
 
-| Entity | Key Fields | Constraints |
-|--------|-----------|-------------|
-| **User** | Username (unique), Email (unique, CI), PasswordHash (BCrypt), Bio, AgeMin/Max, Intent, LookingFor, Lat/Lon, RadiusMiles, IsBanned | Max 3 photos |
-| **Couple** | InviteCode (unique, 8 chars), IsComplete, CreatedByUserId | Members via User.CoupleId FK |
-| **Like** | FromUserId, ToUserId, FromCoupleId?, ToCoupleId? | Unique (From, To) |
-| **Match** | User1Id, User2Id (ordered), Couple1Id?, Couple2Id?, IsActive | Unique (User1, User2); cascade delete messages |
-| **Message** | MatchId, SenderId, Content (≤2000), IsRead, IsFlagged | Indexed on MatchId |
-| **Block** | BlockerUserId, BlockedUserId | Unique pair |
-| **Report** | ReporterUserId, ReportedUserId, Reason (≤50), Details?, IsResolved | — |
-| **SpamWarning** | UserId, Reason, Level (1/2/3) | Level 3 → ban |
-| **UserPhoto** | UserId, Url, SortOrder | Max 3 per user |
-| **UserInterest** | UserId, Tag (≤50) | — |
-| **Event** | Title, Description, BannerUrl, EventDate, Lat/Lon, City, Venue | — |
-| **EventInterest** | UserId, EventId | Unique (User, Event) |
+### Profile Model Includes
+
+User profiles currently include:
+
+- bio
+- age range
+- intent
+- looking-for preference
+- interests
+- red flags
+- city / state / zip
+- radius
+- couple linkage and partner name
+- audio bio URL
+- legacy `videoBioUrl`
+- ordered `videos` list for story/highlight-style media
+- dating preference fields such as:
+  - interested in
+  - neighborhood
+  - ethnicity
+  - religion
+  - relationship type
+  - height
+  - children / family plans
+  - drugs / smoking / marijuana / drinking
+  - politics
+  - education level
+  - weight
+  - physique
+  - sexual preference
+  - comfort with intimacy
 
 ---
 
-## API Reference
-
-### Authentication (No Auth Required)
-
-| Method | Endpoint | Body | Response |
-|--------|----------|------|----------|
-| `POST` | `/api/auth/register` | `{username, email, password}` | `{token, user}` |
-| `POST` | `/api/auth/login` | `{email, password}` | `{token, user}` |
-
-### Profile
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/profile` | Get authenticated user's profile |
-| `PUT` | `/api/profile` | Update bio, age range, intent, location, interests, radius |
-| `POST` | `/api/profile/photos` | Upload photo (max 5 MB; JPEG, PNG, WebP) |
-| `DELETE` | `/api/profile/photos/{photoId}` | Delete a photo |
-
-### Couple
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/couple` | Create couple → `{coupleId, inviteCode}` |
-| `POST` | `/api/couple/join` | Join couple with `{inviteCode}` |
-| `DELETE` | `/api/couple` | Leave couple |
+## Current Feature Set
 
 ### Discovery
 
-| Method | Endpoint | Query Params | Description |
-|--------|----------|--------------|-------------|
-| `GET` | `/api/discovery` | `userType`, `maxDistanceKm`, `skip`, `take` | Get discovery cards |
+- audience filter: all / singles / couples
+- discovery excludes blocked users, already liked users, and already saved users
+- public profile detail screen from discovery cards
+- save, skip, and like actions
 
-### Matching
+### Saved Profiles
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/match/like` | Like a user → `{matched, match?}` |
-| `GET` | `/api/match` | List active matches |
-| `DELETE` | `/api/match/{matchId}` | Unmatch |
+- save profiles for later
+- revisit saved profiles from the `Saved` tab
+- remove saved profiles
 
-### Messaging
+### Matching and Chat
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/message/{matchId}` | Send message (anti-spam checked) |
-| `GET` | `/api/message/{matchId}` | Get messages (`skip`, `take`) |
+- mutual likes create matches
+- matches list in the app
+- chat thread per match
+- SignalR hub at `/hubs/chat`
+- REST message fallback endpoints
+- profile detail navigation from chat context
+
+### Profile and Media
+
+- default profile image fallback for new users
+- custom profile photo uploads enabled again
+- ordered multi-photo support
+- story-style video highlights
+- audio bio upload
+- dating preferences and red flags
+- dedicated native edit screen instead of a modal sheet
 
 ### Safety
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/safety/block` | Block user `{userId}` |
-| `DELETE` | `/api/safety/block/{userId}` | Unblock user |
-| `POST` | `/api/safety/report` | Report user `{userId, reason, details?}` |
+- block user
+- unblock user
+- report user with reason and optional detail
+- anti-spam validation for profile and message content
 
 ### Events
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/event` | Upcoming events in user's radius |
-| `POST` | `/api/event/{eventId}/interest` | Toggle interest |
-| `POST` | `/api/event` | Create event (admin/seed) |
-| `DELETE` | `/api/event/{id}` | Delete event (admin/seed) |
+- list events near the user
+- toggle event interest
+- create and clean up demo events through the API
 
-### Admin
+### Impress Me
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `DELETE` | `/api/admin/seed-users` | Purge all `@triad.dev` seed users |
-| `DELETE` | `/api/admin/seed-events` | Purge all events |
+Impress Me is a prompt-based interaction system currently built into both backend and iOS native app.
 
-### Health
+It supports:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check (PostgreSQL + EF Core) |
+- sending a signal to another user
+- inbox view for sent and received signals
+- prompt response submission
+- sender review flow
+- accept / decline flow
+- pre-match and post-match usage
 
 ---
 
-## SignalR Hub
+## Media Rules
 
-Connect to `/hubs/chat` with JWT token: `?access_token={token}`
+Current backend-enforced media rules:
 
-### Client → Server
+| Rule | Value |
+|---|---|
+| Max profile photos | 5 |
+| Max profile videos | 3 |
+| Max image width | 1200 px |
+| Max audio bio size | 10 MB |
+| Max video size | 50 MB |
+| Allowed audio types | mp3, mp4, m4a, aac, wav |
+| Allowed video types | mp4, mov, m4v, mpeg, webm |
 
-| Method | Parameters | Description |
-|--------|-----------|-------------|
-| `JoinMatch` | `matchId` | Join match chat group (validates participant) |
-| `LeaveMatch` | `matchId` | Leave match chat group |
-| `SendMessage` | `matchId, content` | Send message (anti-spam applied) |
-| `MarkRead` | `matchId` | Mark messages as read |
+Notes:
 
-### Server → Client
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `ReceiveMessage` | `MessageResponse` | New message received |
-| `MessageError` | `string` | Error (spam detected, validation failure) |
-| `MessagesRead` | `matchId` | Read receipt broadcast |
-
----
-
-## Prerequisites
-
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Node.js 20+](https://nodejs.org/)
-- [PostgreSQL](https://www.postgresql.org/) (or a [Supabase](https://supabase.com/) project)
-- [Android Studio](https://developer.android.com/studio) (for Android emulator) or Xcode (for iOS simulator)
-- Expo CLI: `npm install -g expo-cli`
+- Photos are normalized through the API.
+- A shared default image is used as fallback when a user has no custom photos.
+- The profile API currently still carries both `videoBioUrl` and the newer ordered `videos` list.
 
 ---
 
-## Running Locally
+## API Surface
 
-### 1. Start the API
+Base API route prefix: `/api`
 
-#### Option A: Docker (recommended)
+### Auth
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/auth/register` |
+| `POST` | `/api/auth/login` |
+
+### Profile
+
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/profile` |
+| `GET` | `/api/profile/{userId}` |
+| `PUT` | `/api/profile` |
+| `DELETE` | `/api/profile` |
+| `POST` | `/api/profile/photos` |
+| `DELETE` | `/api/profile/photos/{photoId}` |
+| `POST` | `/api/profile/audio-bio` |
+| `DELETE` | `/api/profile/audio-bio` |
+| `POST` | `/api/profile/video-bio` |
+| `DELETE` | `/api/profile/video-bio` |
+| `POST` | `/api/profile/videos` |
+| `DELETE` | `/api/profile/videos/{videoId}` |
+
+### Couple
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/couple` |
+| `POST` | `/api/couple/join` |
+| `DELETE` | `/api/couple` |
+
+### Discovery
+
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/discovery` |
+
+Query params:
+
+- `userType`
+- `maxDistanceKm`
+- `skip`
+- `take`
+
+### Saved Profiles
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/saved` |
+| `GET` | `/api/saved` |
+| `DELETE` | `/api/saved/{targetUserId}` |
+
+### Matches
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/match/like` |
+| `GET` | `/api/match` |
+| `DELETE` | `/api/match/{matchId}` |
+
+### Messaging
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/message/{matchId}` |
+| `GET` | `/api/message/{matchId}` |
+
+### Safety
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/safety/block` |
+| `DELETE` | `/api/safety/block/{userId}` |
+| `POST` | `/api/safety/report` |
+
+### Events
+
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/event` |
+| `POST` | `/api/event/{eventId}/interest` |
+| `POST` | `/api/event` |
+| `DELETE` | `/api/event/cleanup` |
+| `DELETE` | `/api/event/{id}` |
+
+### Impress Me
+
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/impress-me` |
+| `GET` | `/api/impress-me/inbox` |
+| `GET` | `/api/impress-me/{id}` |
+| `POST` | `/api/impress-me/{id}/respond` |
+| `POST` | `/api/impress-me/{id}/review` |
+| `POST` | `/api/impress-me/{id}/accept` |
+| `POST` | `/api/impress-me/{id}/decline` |
+
+### Admin / Seed Support
+
+| Method | Endpoint |
+|---|---|
+| `DELETE` | `/api/admin/seed-users` |
+| `DELETE` | `/api/admin/seed-events` |
+| `POST` | `/api/admin/seed-user` |
+
+### Health / Docs / Realtime
+
+| Endpoint | Purpose |
+|---|---|
+| `/health` | health check |
+| `/swagger` | Swagger UI in development |
+| `/openapi/v1.json` | OpenAPI document in development |
+| `/hubs/chat` | SignalR hub |
+
+---
+
+## Native iOS App Overview
+
+### App Structure
+
+The main SwiftUI app lives in `IOSNative/ThirdWheelNative`.
+
+Important files:
+
+| Path | Purpose |
+|---|---|
+| `ThirdWheelNativeApp.swift` | app entry |
+| `RootView.swift` | session gate + tab shell |
+| `SessionStore.swift` | auth/session/API coordination |
+| `AuthView.swift` | sign in / register |
+| `DiscoverView.swift` | discovery feed |
+| `SavedProfilesView.swift` | saved profiles |
+| `MatchesView.swift` | matches + chat |
+| `ImpressMeView.swift` | Impress Me inbox |
+| `EventsView.swift` | events |
+| `ProfileView.swift` | profile + edit flow |
+| `ProfileDetailView.swift` | public profile detail |
+| `UIComponents.swift` | shared native UI components |
+
+### Current Navigation Shape
+
+- `Discover`
+- `Saved`
+- `Matches`
+- `Impress`
+- `Events`
+- `Profile` via top-right account button
+
+### Current Profile Editing UX
+
+The profile edit flow is now a dedicated screen pushed from `ProfileView`, not a popup sheet. It currently includes:
+
+- media editing cards
+- photo grid management
+- highlight/video management
+- bio and basic preferences
+- location
+- interests
+- red flags
+- dating preference menus
+- audio bio upload
+
+---
+
+## Local Development
+
+### Fastest Workflow
+
+Use the repo script:
 
 ```bash
-docker compose up -d
+./redeploy.sh
 ```
 
-This starts the API on port **5127** with the configured PostgreSQL connection.
+This script:
 
-#### Option B: Manual
+1. rebuilds and redeploys the Docker API
+2. waits for `http://localhost:5127/health`
+3. builds the native iOS app
+4. reinstalls and relaunches the app in the simulator
+
+Optional overrides:
 
 ```bash
-cd backend/ThirdWheel.API
-
-# Apply migrations
-dotnet ef database update
-
-# Run the API (launches on http://localhost:5127)
-dotnet run
+SIMULATOR_NAME="iPhone 16 Pro" ./redeploy.sh
+SIMULATOR_UDID="YOUR-SIM-UDID" ./redeploy.sh
+API_PORT=5127 ./redeploy.sh
 ```
 
-> **Note:** In development mode, the API auto-migrates the database on startup.
+### API Only
 
-#### Configuration
-
-Edit `appsettings.json` or set environment variables:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `ConnectionStrings:DefaultConnection` | PostgreSQL connection string | Supabase instance |
-| `Jwt:Key` | HMAC-SHA256 signing key (≥32 chars) | Placeholder — **change in production** |
-| `Jwt:Issuer` | Token issuer | `ThirdWheel.API` |
-| `Jwt:Audience` | Token audience | `ThirdWheel.Mobile` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector URL (optional) | — |
-
-### 2. Seed Test Data
-
-```powershell
-# From the project root
-.\seed.ps1
+```bash
+docker compose up -d --build api
 ```
 
-The seed script:
-- Purges previous seed data (`@triad.dev` accounts)
-- Creates **50 single users** with randomized profiles and photos (from randomuser.me)
-- Creates **25 couple pairs** (50 users) with linked accounts
-- Creates **6 events** across major world cities
-- Generates **likes and matches** for the primary test account
-- Spreads users across **15 cities**: New York, LA, London, Paris, Berlin, Tokyo, Sydney, San Francisco, Chicago, Dubai, Moscow, Mumbai, São Paulo, Singapore, Toronto
+The API is exposed on:
 
-### 3. Start the Mobile App
+- `http://localhost:5127`
+
+Useful URLs:
+
+- `http://localhost:5127/health`
+- `http://localhost:5127/swagger`
+- `http://localhost:5127/openapi/v1.json`
+
+### Native iOS App Only
+
+```bash
+xcodebuild \
+  -project IOSNative/ThirdWheelNative.xcodeproj \
+  -scheme ThirdWheelNative \
+  -destination 'platform=iOS Simulator,id=YOUR-UDID' \
+  -derivedDataPath /tmp/Triad/ios-build \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+Then install and launch:
+
+```bash
+xcrun simctl install booted /tmp/Triad/ios-build/Build/Products/Debug-iphonesimulator/ThirdWheelNative.app
+xcrun simctl launch booted com.thirdwheel.iosnative
+```
+
+### Expo App
+
+If you want to run the Expo client:
 
 ```bash
 cd mobile
-
-# Install dependencies
 npm install
-
-# Start Expo dev server + open on Android emulator
-npx expo start --android
+npm run ios
 ```
-
-Press `a` to open on Android, `i` for iOS, or scan the QR code with Expo Go.
-
-#### Android Emulator Setup
-
-1. Open Android Studio → Device Manager
-2. Create a virtual device (e.g., Pixel 7, API 34+)
-3. Launch the emulator
-4. Run `npx expo start --android`
-
-> **Important:** The mobile app connects to the API via `10.0.2.2` (Android emulator's host alias). If running on a physical device, update `API_URL` in `mobile/src/constants.ts` to your machine's LAN IP.
-
-### 4. Verify Everything Works
-
-| Check | Command / URL |
-|-------|---------------|
-| API is running | `curl http://localhost:5127/health` |
-| Emulator connected | `adb devices` |
-| Metro bundler | Open `http://localhost:8081` in browser |
-| App loads | Should see login screen in emulator |
 
 ---
 
-## Deployment
+## Seed Data
 
-### Docker Compose
+Run the seed script from the repo root:
 
-```yaml
-services:
-  api:
-    build:
-      context: ./backend/ThirdWheel.API
-      dockerfile: Dockerfile
-    ports:
-      - "5127:5000"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=<your-connection-string>
-      - Jwt__Key=<your-secret-key-at-least-32-chars>
-      - Jwt__Issuer=ThirdWheel.API
-      - Jwt__Audience=ThirdWheel.Mobile
+```powershell
+.\seed.ps1
 ```
 
-### Production Considerations
+The current seed flow:
 
-| Concern | Recommendation |
-|---------|---------------|
-| **Secrets** | Use Azure Key Vault, AWS Secrets Manager, or Docker secrets — never commit keys to source |
-| **JWT Key** | Generate a cryptographically random 256-bit key |
-| **CORS** | Restrict `AllowAnyOrigin` to specific mobile app origins |
-| **Photo Storage** | Migrate from local `/uploads/` to S3, Azure Blob, or CDN |
-| **Database** | Use connection pooling (PgBouncer) and read replicas for scale |
-| **HTTPS** | Terminate TLS at the load balancer; enforce HTTPS-only |
-| **Rate Limiting** | Add ASP.NET Core rate limiting middleware beyond the 50-like/day cap |
-| **Observability** | Point OTLP exporters at Jaeger, Grafana Tempo, or Honeycomb |
-| **Health Checks** | Wire `/health` into Kubernetes liveness/readiness probes or load balancer checks |
+- preserves `yasvanth@live.in`
+- deletes other users and old seeded events
+- creates `15` single users
+- creates `5` couple pairs (`10` users)
+- total seeded profiles: `25`
+- uses Washington State locations only
+- creates `6` Washington-based events
+- seeds a set of likes/matches for the preserved demo user
 
-### Environment Variables (OTLP)
+Current seeded cities include places such as:
 
-| Variable | Purpose |
-|----------|---------|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector base URL |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Traces-specific endpoint |
-| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | Metrics-specific endpoint |
-| `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` | Logs-specific endpoint |
-| `EXPO_PUBLIC_OTEL_TRACES_URL` | Mobile OTLP trace endpoint |
+- Seattle
+- Bellevue
+- Tacoma
+- Spokane
+- Olympia
+- Everett
+- Bellingham
+- Vancouver, WA
+- Redmond
+- Kirkland
+- Renton
+- Issaquah
+- Yakima
+- Wenatchee
+- Kennewick
 
 ---
 
-## Business Rules
+## Configuration
 
-| Rule | Value |
-|------|-------|
-| JWT token expiry | 7 days |
-| Max photos per user | 3 |
-| Max image width | 1200 px (auto-resize) |
-| Max likes per day | 50 (rolling 24-hour window) |
+Important environment/config values:
+
+| Setting | Purpose |
+|---|---|
+| `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
+| `Jwt__Key` | JWT signing key |
+| `Jwt__Issuer` | token issuer |
+| `Jwt__Audience` | token audience |
+| `Cors__AllowedOrigins` | non-dev CORS allowlist |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OpenTelemetry exporter endpoint |
+| `APIBaseURL` in iOS `Info.plist` | physical-device backend URL override |
+
+Current local defaults:
+
+- API port: `5127`
+- iOS bundle id: `com.thirdwheel.iosnative`
+- default simulator target used by repo workflow: `iPhone 17`
+
+---
+
+## Business Rules and Limits
+
+| Rule | Current Value |
+|---|---|
+| JWT expiry | 7 days |
+| Global API limiter | 120 requests / 60 seconds per IP |
+| Max likes per day | 50 |
+| Max profile photos | 5 |
+| Max profile videos | 3 |
+| Bio max length | 500 chars |
+| Message max length | 2000 chars |
 | Spam strikes before ban | 3 |
-| Repeated message threshold | 3 identical messages in 5 minutes |
-| Message max length | 2000 characters |
-| Bio max length | 500 characters |
-| Couple invite code | 8 alphanumeric characters (excludes O, I, L, 1, 0) |
-| Photo upload max size | 5 MB |
-| Accepted image formats | JPEG, PNG, WebP |
+| Repeated message trigger | 3 identical messages in 5 minutes |
 
 ---
 
-## Mobile App Design
+## Observability
 
-### Design System
+The backend is wired for OpenTelemetry traces, metrics, and logs.
 
-The app uses a **Neon Dark** aesthetic with glassmorphism and clay-button styling:
+Instrumentation includes:
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| Background | `#0B0B0F` | Screen backgrounds |
-| Surface | `#111116` | Cards, containers |
-| Surface Light | `#1C1C24` | Elevated surfaces |
-| Primary | `#8B5CF6` | Purple — main actions |
-| Secondary | `#EC4899` | Pink — secondary CTAs |
-| Text | `#FAFAFA` | Primary text |
-| Text Secondary | `#71717A` | Captions, hints |
-| Error | `#F87171` | Destructive actions |
-| Success | `#34D399` | Confirmations |
-| Warning | `#FBBF24` | Alerts |
+- ASP.NET Core
+- HTTP client
+- EF Core
+- runtime metrics
 
-**Clay Buttons**: Platform-specific shadows (iOS `shadowColor` / Android `elevation`) with neon glow on primary/secondary variants.
+Development mode also enables:
 
-**Glass Overlays**: `BlurView` (intensity 12–40, tint dark) with semi-transparent borders for cards and discovery overlays.
-
-### Screen Flow
-
-```
-App Launch
-  │
-  ├─ Not Authenticated ──▶ Login ──▶ Register
-  │
-  └─ Authenticated ──▶ Tab Navigator
-                          ├── Discover   (swipeable cards, like/skip)
-                          ├── Matches    (match list → chat)
-                          ├── Events     (upcoming events, interest toggle)
-                          └── Profile    (photos, bio, couple controls)
-                               │
-                               └── Chat/[matchId]  (real-time messaging)
-```
+- console exporters
+- Swagger UI
+- automatic migrations on startup
 
 ---
 
-## Project Structure Details
+## Notes
 
-### Backend Services
-
-| Service | Responsibility |
-|---------|---------------|
-| `AuthService` | Registration, login, JWT generation (BCrypt hashing) |
-| `ProfileService` | Profile CRUD, photo upload/delete, interest management |
-| `CoupleService` | Create/join/leave couple, invite code generation |
-| `DiscoveryService` | Card feed with filtering, exclusions, distance calc |
-| `MatchingService` | Like processing, mutual-match detection, unmatch |
-| `MessagingService` | Send/fetch messages, read receipts |
-| `SafetyService` | Block/unblock, report submission |
-| `AntiSpamService` | Keyword filtering, link detection, repeated-message check, progressive bans |
-| `EventService` | Event CRUD, interest toggle, location-based filtering |
-| `ImageService` | EXIF stripping, resize, format conversion, file storage |
-
-### Mobile Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `expo-router` (~4.0) | File-based navigation |
-| `@react-navigation/*` (7.0) | Tab and stack navigation |
-| `@microsoft/signalr` (8.0) | WebSocket real-time chat |
-| `expo-image-picker` (~16.0) | Camera/gallery photo selection |
-| `expo-location` (~18.0) | GPS coordinate access |
-| `expo-secure-store` (~14.0) | Encrypted JWT token storage |
-| `expo-blur` (~14.0) | Glassmorphism blur effects |
-| `expo-linear-gradient` (~14.0) | Gradient overlays |
-| `@opentelemetry/*` (1.9–2.1) | Distributed tracing |
+- Swagger only appears in development.
+- The SignalR hub does not appear as a full REST endpoint in Swagger.
+- The native iOS app is ahead of the Expo client in terms of current product features.
+- `IOSNative/README.md` still describes an earlier scope; this root README is the current project-level source of truth.
 
 ---
 
 ## License
 
-Private — all rights reserved.
-- Anti-spam: keyword detection, rate limiting, progressive warn→throttle→ban
-- Fake profile detection: requires photo + bio + interests
+Private repository. All rights reserved.

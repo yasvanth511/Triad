@@ -46,12 +46,23 @@ public class AuthService
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            var token = GenerateToken(user);
+            // Reload with all navigation properties so UserMapper has a complete object
+            var savedUser = await _db.Users
+                .AsSplitQuery()
+                .Include(u => u.Photos)
+                .Include(u => u.Videos)
+                .Include(u => u.Interests)
+                .Include(u => u.RedFlags)
+                .Include(u => u.Couple)
+                    .ThenInclude(c => c!.Members)
+                .FirstAsync(u => u.Id == user.Id);
+
+            var token = GenerateToken(savedUser);
             Telemetry.AuthOperations.Add(1,
                 new KeyValuePair<string, object?>("operation", "register"),
                 new KeyValuePair<string, object?>("outcome", "success"));
             Telemetry.MarkSuccess(activity);
-            return new AuthResponse(token, UserMapper.ToProfileResponse(user));
+            return new AuthResponse(token, UserMapper.ToProfileResponse(savedUser));
         }
         catch (Exception ex)
         {
@@ -71,8 +82,11 @@ public class AuthService
         try
         {
             var user = await _db.Users
+                .AsSplitQuery()
                 .Include(u => u.Photos)
+                .Include(u => u.Videos)
                 .Include(u => u.Interests)
+                .Include(u => u.RedFlags)
                 .Include(u => u.Couple)
                     .ThenInclude(c => c!.Members)
                 .FirstOrDefaultAsync(u => u.Email == req.Email.ToLowerInvariant());

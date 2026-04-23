@@ -108,6 +108,8 @@ private struct MatchChatView: View {
     @State private var isSending = false
     @State private var selectedParticipantID: UUID?
     @State private var isShowingProfileDetail = false
+    @State private var isSendingImpressMe = false
+    @State private var notice: String?
 
     var body: some View {
         ZStack {
@@ -117,6 +119,11 @@ private struct MatchChatView: View {
                 if isLoading {
                     ProgressView("Loading conversation...")
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                }
+
+                if let notice {
+                    EmptyStateCard(title: "Update", message: notice)
                         .padding(.horizontal, 20)
                 }
 
@@ -157,7 +164,21 @@ private struct MatchChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                profileNavigationControl
+                HStack(spacing: 4) {
+                    Button {
+                        Task { await sendImpressMe() }
+                    } label: {
+                        if isSendingImpressMe {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Label("Impress Me", systemImage: "sparkles")
+                                .labelStyle(.iconOnly)
+                        }
+                    }
+                    .disabled(isSendingImpressMe)
+
+                    profileNavigationControl
+                }
             }
         }
         .navigationDestination(isPresented: $isShowingProfileDetail) {
@@ -246,6 +267,20 @@ private struct MatchChatView: View {
 
         do {
             messages = try await session.loadMessages(matchId: match.id)
+        } catch {
+            session.presentError(error)
+        }
+    }
+
+    private func sendImpressMe() async {
+        guard !isSendingImpressMe else { return }
+        isSendingImpressMe = true
+        defer { isSendingImpressMe = false }
+        guard let targetId = match.participants.first?.userId else { return }
+        do {
+            _ = try await session.sendImpressMe(targetUserId: targetId, matchId: match.id)
+            let targetName = match.participants.first?.username ?? "them"
+            notice = "Impress Me sent to \(targetName). We'll surface their answer in Sent."
         } catch {
             session.presentError(error)
         }

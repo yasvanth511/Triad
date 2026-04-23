@@ -29,6 +29,10 @@ struct DiscoverView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var locationPermissions = LocationPermissionManager()
 
+    private var viewerRedFlags: Set<String> {
+        Set((session.currentUser?.redFlags ?? []).map { $0.lowercased() })
+    }
+
     @State private var cards: [DiscoveryCard] = []
     @State private var selectedAudience: Audience = .all
     @State private var isLoading = false
@@ -101,11 +105,11 @@ struct DiscoverView: View {
                     ForEach(cards) { card in
                         VStack(alignment: .leading, spacing: 14) {
                             NavigationLink {
-                                ProfileDetailView(userId: card.userId, fallbackName: card.username) { blockedId in
+                                ProfileDetailView(userId: card.userId, fallbackName: card.username, onBlocked: { blockedId in
                                     guard blockedId == card.userId else { return }
                                     removeCard(card)
                                     notice = "\(card.username) was blocked."
-                                }
+                                })
                             } label: {
                                 discoverCardSummary(for: card)
                             }
@@ -236,8 +240,10 @@ struct DiscoverView: View {
 
     @ViewBuilder
     private func discoverCardSummary(for card: DiscoveryCard) -> some View {
+        let flagCount = card.interests.filter { viewerRedFlags.contains($0.lowercased()) }.count
+
         VStack(alignment: .leading, spacing: 14) {
-            RemoteMediaView(path: card.photos.first?.url, height: 220)
+            PhotoCarouselView(photos: card.photos, height: 220)
 
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -252,10 +258,20 @@ struct DiscoverView: View {
 
                 Spacer()
 
-                SectionBadge(
-                    text: card.isCouple ? "Couple" : "Single",
-                    color: card.isCouple ? BrandStyle.secondary : BrandStyle.accent
-                )
+                VStack(alignment: .trailing, spacing: 6) {
+                    SectionBadge(
+                        text: card.isCouple ? "Couple" : "Single",
+                        color: card.isCouple ? BrandStyle.secondary : BrandStyle.accent
+                    )
+
+                    if flagCount > 0 {
+                        SectionBadge(
+                            text: "\(flagCount) Red Flag\(flagCount == 1 ? "" : "s")",
+                            color: .red,
+                            icon: "flag.fill"
+                        )
+                    }
+                }
             }
 
             Text(card.bio.isEmpty ? "No bio yet." : card.bio)
@@ -279,13 +295,7 @@ struct DiscoverView: View {
             }
 
             if !card.interests.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(card.interests, id: \.self) { interest in
-                            SectionBadge(text: interest, color: BrandStyle.textSecondary)
-                        }
-                    }
-                }
+                InterestBadgeList(interests: card.interests, flaggedSet: viewerRedFlags)
             }
 
             HStack {

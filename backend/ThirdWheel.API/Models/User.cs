@@ -18,6 +18,12 @@ public class User
     [MaxLength(500)]
     public string Bio { get; set; } = string.Empty;
 
+    [MaxLength(512)]
+    public string? AudioBioUrl { get; set; }
+
+    [MaxLength(512)]
+    public string? VideoBioUrl { get; set; }
+
     public int AgeMin { get; set; }
     public int AgeMax { get; set; }
 
@@ -41,6 +47,61 @@ public class User
 
     public int? RadiusMiles { get; set; }
 
+    // Dating Preferences
+    [MaxLength(100)]
+    public string? InterestedIn { get; set; }
+
+    [MaxLength(150)]
+    public string? Neighborhood { get; set; }
+
+    [MaxLength(100)]
+    public string? Ethnicity { get; set; }
+
+    [MaxLength(100)]
+    public string? Religion { get; set; }
+
+    [MaxLength(100)]
+    public string? RelationshipType { get; set; }
+
+    [MaxLength(20)]
+    public string? Height { get; set; }
+
+    [MaxLength(100)]
+    public string? Children { get; set; }
+
+    [MaxLength(100)]
+    public string? FamilyPlans { get; set; }
+
+    [MaxLength(100)]
+    public string? Drugs { get; set; }
+
+    [MaxLength(100)]
+    public string? Smoking { get; set; }
+
+    [MaxLength(100)]
+    public string? Marijuana { get; set; }
+
+    [MaxLength(100)]
+    public string? Drinking { get; set; }
+
+    [MaxLength(100)]
+    public string? Politics { get; set; }
+
+    [MaxLength(100)]
+    public string? EducationLevel { get; set; }
+
+    [MaxLength(20)]
+    public string? Weight { get; set; }
+
+    [MaxLength(100)]
+    public string? Physique { get; set; }
+
+    [MaxLength(100)]
+    public string? SexualPreference { get; set; }
+
+    [MaxLength(100)]
+    public string? ComfortWithIntimacy { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -48,7 +109,9 @@ public class User
 
     // Navigation
     public List<UserPhoto> Photos { get; set; } = new();
+    public List<UserVideo> Videos { get; set; } = new();
     public List<UserInterest> Interests { get; set; } = new();
+    public List<UserRedFlag> RedFlags { get; set; } = new();
     public Guid? CoupleId { get; set; }
     public Couple? Couple { get; set; }
     public List<Like> LikesSent { get; set; } = new();

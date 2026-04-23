@@ -27,7 +27,30 @@ public static class UserMapper
             user.State,
             user.ZipCode,
             user.RadiusMiles,
-            couplePartnerName
+            couplePartnerName,
+            user.AudioBioUrl,
+            user.VideoBioUrl,
+            user.Videos.OrderBy(v => v.SortOrder)
+                .Select(v => new VideoResponse(v.Id, v.Url, v.SortOrder)).ToList(),
+            user.RedFlags.Select(r => r.Tag).ToList(),
+            user.InterestedIn,
+            user.Neighborhood,
+            user.Ethnicity,
+            user.Religion,
+            user.RelationshipType,
+            user.Height,
+            user.Children,
+            user.FamilyPlans,
+            user.Drugs,
+            user.Smoking,
+            user.Marijuana,
+            user.Drinking,
+            user.Politics,
+            user.EducationLevel,
+            user.Weight,
+            user.Physique,
+            user.SexualPreference,
+            user.ComfortWithIntimacy
         );
     }
 }

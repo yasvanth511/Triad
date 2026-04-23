@@ -10,6 +10,7 @@ final class SessionStore: ObservableObject {
 
     @Published private(set) var phase: Phase = .loading
     @Published private(set) var currentUser: UserProfile?
+    @Published private(set) var impressMeSummary: ImpressMeSummary = .empty
     @Published var lastErrorMessage: String?
     @Published var isAuthenticating = false
 
@@ -75,6 +76,7 @@ final class SessionStore: ObservableObject {
         tokenStore.deleteToken()
         client.authToken = nil
         currentUser = nil
+        impressMeSummary = .empty
         phase = .signedOut
     }
 
@@ -99,6 +101,88 @@ final class SessionStore: ObservableObject {
     func deleteAccount() async throws {
         try await client.delete("profile")
         signOut()
+    }
+
+    // MARK: – Audio Bio
+
+    /// Upload an audio file as the current user's bio clip.
+    /// - Parameters:
+    ///   - data: Raw audio bytes
+    ///   - mimeType: e.g. "audio/mpeg", "audio/m4a", "audio/wav"
+    ///   - fileName: e.g. "bio.m4a"
+    @discardableResult
+    func uploadAudioBio(data: Data, mimeType: String, fileName: String) async throws -> String {
+        let response: UploadAudioBioResponse = try await client.upload(
+            "profile/audio-bio",
+            data: data,
+            mimeType: mimeType,
+            fileName: fileName
+        )
+        _ = try await reloadCurrentUser()
+        return response.url
+    }
+
+    func deleteAudioBio() async throws {
+        try await client.delete("profile/audio-bio")
+        _ = try await reloadCurrentUser()
+    }
+
+    // MARK: – Video Bio
+
+    /// Upload a video file as the current user's bio clip.
+    /// - Parameters:
+    ///   - data: Raw video bytes
+    ///   - mimeType: e.g. "video/mp4", "video/quicktime"
+    ///   - fileName: e.g. "bio.mp4"
+    @discardableResult
+    func uploadVideoBio(data: Data, mimeType: String, fileName: String) async throws -> String {
+        let response: UploadVideoBioResponse = try await client.upload(
+            "profile/video-bio",
+            data: data,
+            mimeType: mimeType,
+            fileName: fileName
+        )
+        _ = try await reloadCurrentUser()
+        return response.url
+    }
+
+    func deleteVideoBio() async throws {
+        try await client.delete("profile/video-bio")
+        _ = try await reloadCurrentUser()
+    }
+
+    @discardableResult
+    func uploadProfilePhoto(data: Data, mimeType: String, fileName: String) async throws -> Photo {
+        let response: Photo = try await client.upload(
+            "profile/photos",
+            data: data,
+            mimeType: mimeType,
+            fileName: fileName
+        )
+        _ = try await reloadCurrentUser()
+        return response
+    }
+
+    func deleteProfilePhoto(photoId: UUID) async throws {
+        try await client.delete("profile/photos/\(photoId.uuidString.lowercased())")
+        _ = try await reloadCurrentUser()
+    }
+
+    @discardableResult
+    func uploadProfileVideo(data: Data, mimeType: String, fileName: String) async throws -> ProfileVideo {
+        let response: ProfileVideo = try await client.upload(
+            "profile/videos",
+            data: data,
+            mimeType: mimeType,
+            fileName: fileName
+        )
+        _ = try await reloadCurrentUser()
+        return response
+    }
+
+    func deleteProfileVideo(videoId: UUID) async throws {
+        try await client.delete("profile/videos/\(videoId.uuidString.lowercased())")
+        _ = try await reloadCurrentUser()
     }
 
     func loadDiscovery(userType: String?) async throws -> [DiscoveryCard] {
@@ -172,6 +256,75 @@ final class SessionStore: ObservableObject {
         try await client.post("event/\(eventId.uuidString.lowercased())/interest", body: EmptyRequest())
     }
 
+    // MARK: – Impress Me
+
+    func getImpressMeInbox() async throws -> ImpressMeInbox {
+        let inbox: ImpressMeInbox = try await client.get("impress-me/inbox")
+        syncImpressMeSummary(from: inbox)
+        return inbox
+    }
+
+    func getImpressMeSignal(signalId: UUID) async throws -> ImpressMeSignal {
+        let signal: ImpressMeSignal = try await client.get("impress-me/\(signalId.uuidString.lowercased())")
+        _ = try? await loadImpressMeSummary()
+        return signal
+    }
+
+    func loadImpressMeSummary() async throws -> ImpressMeSummary {
+        let summary: ImpressMeSummary = try await client.get("impress-me/summary")
+        impressMeSummary = summary
+        return summary
+    }
+
+    func sendImpressMe(targetUserId: UUID, matchId: UUID? = nil) async throws -> ImpressMeSignal {
+        let signal: ImpressMeSignal = try await client.post(
+            "impress-me",
+            body: SendImpressMeRequest(targetUserId: targetUserId, matchId: matchId)
+        )
+        _ = try? await loadImpressMeSummary()
+        return signal
+    }
+
+    func respondToImpressMe(signalId: UUID, text: String) async throws -> ImpressMeSignal {
+        let signal: ImpressMeSignal = try await client.post(
+            "impress-me/\(signalId.uuidString.lowercased())/respond",
+            body: ImpressMeRespondRequest(textContent: text)
+        )
+        _ = try? await loadImpressMeSummary()
+        return signal
+    }
+
+    func reviewImpressMe(signalId: UUID) async throws -> ImpressMeSignal {
+        let signal: ImpressMeSignal = try await client.post(
+            "impress-me/\(signalId.uuidString.lowercased())/review",
+            body: EmptyRequest()
+        )
+        _ = try? await loadImpressMeSummary()
+        return signal
+    }
+
+    func acceptImpressMe(signalId: UUID) async throws -> ImpressMeSignal {
+        let signal: ImpressMeSignal = try await client.post(
+            "impress-me/\(signalId.uuidString.lowercased())/accept",
+            body: EmptyRequest()
+        )
+        _ = try? await loadImpressMeSummary()
+        return signal
+    }
+
+    func declineImpressMe(signalId: UUID) async throws -> ImpressMeSignal {
+        let signal: ImpressMeSignal = try await client.post(
+            "impress-me/\(signalId.uuidString.lowercased())/decline",
+            body: EmptyRequest()
+        )
+        _ = try? await loadImpressMeSummary()
+        return signal
+    }
+
+    func syncImpressMeSummary(from inbox: ImpressMeInbox) {
+        impressMeSummary = inbox.summary
+    }
+
     func clearError() {
         lastErrorMessage = nil
     }
@@ -191,6 +344,13 @@ final class SessionStore: ObservableObject {
         } catch {
             lastErrorMessage = "Signed in, but the session could not be saved for next launch. \(error.localizedDescription)"
         }
+    }
+
+    @discardableResult
+    private func reloadCurrentUser() async throws -> UserProfile {
+        let refreshed: UserProfile = try await client.get("profile")
+        currentUser = refreshed
+        return refreshed
     }
 }
 

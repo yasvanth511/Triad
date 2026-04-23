@@ -34,11 +34,11 @@ struct SavedProfilesView: View {
                 ForEach(savedProfiles) { profile in
                     VStack(alignment: .leading, spacing: 14) {
                         NavigationLink {
-                            ProfileDetailView(userId: profile.userId, fallbackName: profile.username) { blockedId in
+                            ProfileDetailView(userId: profile.userId, fallbackName: profile.username, onBlocked: { blockedId in
                                 guard blockedId == profile.userId else { return }
                                 removeLocally(profile)
                                 notice = "\(profile.username) was blocked."
-                            }
+                            })
                         } label: {
                             savedCardSummary(for: profile)
                         }

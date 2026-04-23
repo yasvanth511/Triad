@@ -48,6 +48,7 @@ public class SavedProfileService
     public async Task<List<SavedProfileResponse>> GetSavedProfilesAsync(Guid userId)
     {
         var currentUser = await _db.Users
+            .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new KeyNotFoundException("User not found.");
 
@@ -57,6 +58,8 @@ public class SavedProfileService
             .ToListAsync();
 
         var savedProfiles = await _db.SavedProfiles
+            .AsNoTracking()
+            .AsSplitQuery()
             .Where(s => s.UserId == userId && !blockedIds.Contains(s.SavedUserId) && !s.SavedUser.IsBanned)
             .Include(s => s.SavedUser)
                 .ThenInclude(u => u.Photos)

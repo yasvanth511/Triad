@@ -29,7 +29,27 @@ public record UpdateProfileRequest(
     [MaxLength(100)] string? City,
     [MaxLength(100)] string? State,
     [MaxLength(10)] string? ZipCode,
-    int? RadiusMiles
+    int? RadiusMiles,
+    List<string>? RedFlags,
+    // Dating Preferences
+    [MaxLength(100)] string? InterestedIn,
+    [MaxLength(150)] string? Neighborhood,
+    [MaxLength(100)] string? Ethnicity,
+    [MaxLength(100)] string? Religion,
+    [MaxLength(100)] string? RelationshipType,
+    [MaxLength(20)] string? Height,
+    [MaxLength(100)] string? Children,
+    [MaxLength(100)] string? FamilyPlans,
+    [MaxLength(100)] string? Drugs,
+    [MaxLength(100)] string? Smoking,
+    [MaxLength(100)] string? Marijuana,
+    [MaxLength(100)] string? Drinking,
+    [MaxLength(100)] string? Politics,
+    [MaxLength(100)] string? EducationLevel,
+    [MaxLength(20)] string? Weight,
+    [MaxLength(100)] string? Physique,
+    [MaxLength(100)] string? SexualPreference,
+    [MaxLength(100)] string? ComfortWithIntimacy
 );
 
 public record UserProfileResponse(
@@ -48,10 +68,37 @@ public record UserProfileResponse(
     string State,
     string ZipCode,
     int? RadiusMiles,
-    string? CouplePartnerName
+    string? CouplePartnerName,
+    string? AudioBioUrl,
+    string? VideoBioUrl,
+    List<VideoResponse> Videos,
+    List<string> RedFlags,
+    // Dating Preferences
+    string? InterestedIn,
+    string? Neighborhood,
+    string? Ethnicity,
+    string? Religion,
+    string? RelationshipType,
+    string? Height,
+    string? Children,
+    string? FamilyPlans,
+    string? Drugs,
+    string? Smoking,
+    string? Marijuana,
+    string? Drinking,
+    string? Politics,
+    string? EducationLevel,
+    string? Weight,
+    string? Physique,
+    string? SexualPreference,
+    string? ComfortWithIntimacy
 );
 
 public record PhotoResponse(Guid Id, string Url, int SortOrder);
+public record VideoResponse(Guid Id, string Url, int SortOrder);
+
+public record UploadAudioBioResponse(string Url);
+public record UploadVideoBioResponse(string Url);
 
 // Couple
 public record CreateCoupleResponse(Guid CoupleId, string InviteCode);
