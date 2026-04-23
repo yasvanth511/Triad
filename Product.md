@@ -1,5 +1,26 @@
 # Triad — Product Overview
 
+## Table of Contents
+
+- [Who is Triad for?](#who-is-triad-for)
+- [The Core Idea](#the-core-idea)
+- [Getting Started](#getting-started)
+- [Your Profile](#your-profile)
+  - [Couple Profiles](#couple-profiles)
+- [Discovery](#discovery)
+- [Likes & Matching](#likes--matching)
+  - [Couple ↔ Single Match Flow](#couple--single-match-flow)
+- [Chat](#chat)
+- [Saved Profiles](#saved-profiles)
+- [Impress Me](#impress-me)
+- [Events](#events)
+- [Safety](#safety)
+- [Red Flags](#red-flags)
+- [Full User Journey](#full-user-journey)
+- [Key Principles](#key-principles)
+
+---
+
 Triad is a dating and social discovery app built for a modern reality: not everyone is a single person looking for another single person. Triad is designed for **singles, couples, and group-aware connection** — letting people find compatible matches regardless of their relationship structure.
 
 ---

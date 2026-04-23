@@ -10,6 +10,59 @@ The backend is the shared source of truth. The native iOS app is where most rece
 
 ---
 
+## Table of Contents
+
+- [Repo Layout](#repo-layout)
+- [Current Product Scope](#current-product-scope)
+  - [Backend API](#backend-api)
+  - [Native iOS App](#native-ios-app)
+  - [Expo App](#expo-app)
+- [Backend Overview](#backend-overview)
+  - [Core Stack](#core-stack)
+  - [Main Backend Folders](#main-backend-folders)
+  - [Key Backend Features](#key-backend-features)
+- [Data Model Highlights](#data-model-highlights)
+  - [Profile Model Includes](#profile-model-includes)
+- [Current Feature Set](#current-feature-set)
+  - [Discovery](#discovery)
+  - [Saved Profiles](#saved-profiles)
+  - [Matching and Chat](#matching-and-chat)
+  - [Profile and Media](#profile-and-media)
+  - [Safety](#safety)
+  - [Events](#events)
+  - [Impress Me](#impress-me)
+- [Media Rules](#media-rules)
+- [API Surface](#api-surface)
+  - [Auth](#auth)
+  - [Profile](#profile)
+  - [Couple](#couple)
+  - [Discovery](#discovery-1)
+  - [Saved Profiles](#saved-profiles-1)
+  - [Matches](#matches)
+  - [Messaging](#messaging)
+  - [Safety](#safety-1)
+  - [Events](#events-1)
+  - [Impress Me](#impress-me-1)
+  - [Admin / Seed Support](#admin--seed-support)
+  - [Health / Docs / Realtime](#health--docs--realtime)
+- [Native iOS App Overview](#native-ios-app-overview)
+  - [App Structure](#app-structure)
+  - [Current Navigation Shape](#current-navigation-shape)
+  - [Current Profile Editing UX](#current-profile-editing-ux)
+- [Local Development](#local-development)
+  - [Fastest Workflow](#fastest-workflow)
+  - [API Only](#api-only)
+  - [Native iOS App Only](#native-ios-app-only)
+  - [Expo App](#expo-app-1)
+- [Seed Data](#seed-data)
+- [Configuration](#configuration)
+- [Business Rules and Limits](#business-rules-and-limits)
+- [Observability](#observability)
+- [Notes](#notes)
+- [License](#license)
+
+---
+
 ## Repo Layout
 
 ```text
