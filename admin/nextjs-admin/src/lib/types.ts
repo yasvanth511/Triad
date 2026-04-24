@@ -57,3 +57,59 @@ export interface ModerationAnalytics {
   topReportReasons?: ReportReason[];
   verificationStatusDistribution?: { status?: string; count?: number }[];
 }
+
+export interface AdminBusinessPartnerSummary {
+  id: string;
+  userId: string;
+  username: string;
+  email: string;
+  status: string;
+  businessName?: string | null;
+  category?: string | null;
+  createdAt: string;
+}
+
+export interface AdminBusinessEventSummary {
+  id: string;
+  businessPartnerId: string;
+  businessName: string;
+  title: string;
+  category: string;
+  status: string;
+  startDate?: string | null;
+  createdAt: string;
+}
+
+export interface AdminBusinessOfferSummary {
+  id: string;
+  businessEventId: string;
+  eventTitle: string;
+  businessName: string;
+  offerType: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminChallengeSummary {
+  id: string;
+  businessEventId: string;
+  eventTitle: string;
+  businessName: string;
+  prompt: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface BusinessAuditLogItem {
+  id: string;
+  action: string;
+  adminUserId?: string | null;
+  targetPartnerId?: string | null;
+  targetEventId?: string | null;
+  targetOfferId?: string | null;
+  targetChallengeId?: string | null;
+  reason?: string | null;
+  note?: string | null;
+  createdAt: string;
+}

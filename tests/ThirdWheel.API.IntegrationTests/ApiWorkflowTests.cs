@@ -23,6 +23,136 @@ public class ApiWorkflowTests : IClassFixture<TestApiFactory>
     }
 
     [Fact]
+    public async Task BusinessPartner_Event_Offer_Challenge_And_Analytics_Flow_Works()
+    {
+        await _factory.ResetStateAsync();
+
+        var business = await RegisterBusinessAsync("venueboss");
+        var fan = await RegisterUserAsync("eventfan");
+
+        var profileResponse = await business.Client.PutAsJsonAsync("/api/business/profile", new UpsertBusinessProfileRequest(
+            BusinessName: "Velvet Social Club",
+            Category: "events-experiences",
+            Description: "Curated events for Detroit singles.",
+            Website: "https://velvet.example.com",
+            ContactEmail: "hello@velvet.example.com",
+            ContactPhone: "313-555-0100",
+            Address: "100 Main St",
+            City: "Detroit",
+            State: "MI"));
+        profileResponse.EnsureSuccessStatusCode();
+
+        await _factory.WithDbContextAsync(async db =>
+        {
+            var partner = await db.BusinessPartners.SingleAsync(item => item.UserId == business.User.Id);
+            partner.Status = BusinessVerificationStatus.Approved;
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        var createdEvent = await PostAndReadAsync<BusinessEventResponse>(business.Client, "/api/business/events", new CreateBusinessEventRequest(
+            Title: "Friday Night Match Mixer",
+            Description: "A social night with conversation prompts.",
+            Category: "events-experiences",
+            Location: "Velvet Social Club",
+            City: "Detroit",
+            State: "MI",
+            Latitude: 42.3314,
+            Longitude: -83.0458,
+            StartDate: DateTime.UtcNow.AddDays(7),
+            EndDate: DateTime.UtcNow.AddDays(7).AddHours(3),
+            Capacity: 120,
+            Price: 15,
+            ExternalTicketUrl: "https://tickets.example.com/mixer"));
+
+        Assert.Equal(BusinessEventStatus.Draft, createdEvent.Status);
+        Assert.Equal(HttpStatusCode.NoContent, (await business.Client.PostAsync($"/api/business/events/{createdEvent.Id}/submit", null)).StatusCode);
+
+        await _factory.WithDbContextAsync(async db =>
+        {
+            var businessEvent = await db.BusinessEvents.SingleAsync(item => item.Id == createdEvent.Id);
+            businessEvent.Status = BusinessEventStatus.Published;
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        var publicEvents = await fan.Client.GetFromJsonAsync<List<BusinessEventResponse>>("/api/business-events", TestJson.Default);
+        Assert.NotNull(publicEvents);
+        Assert.Contains(publicEvents, item => item.Id == createdEvent.Id);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await fan.Client.PostAsync($"/api/business-events/{createdEvent.Id}/like", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await fan.Client.PostAsync($"/api/business-events/{createdEvent.Id}/save", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await fan.Client.PostAsync($"/api/business-events/{createdEvent.Id}/register", null)).StatusCode);
+
+        var createdOffer = await PostAndReadAsync<BusinessOfferResponse>(business.Client, $"/api/business/events/{createdEvent.Id}/offers", new CreateBusinessOfferRequest(
+            OfferType: OfferType.Coupon,
+            Title: "Welcome Drink",
+            Description: "One free welcome drink.",
+            CouponCode: "VELVET1",
+            ClaimLimit: 25,
+            ExpiryDate: DateTime.UtcNow.AddDays(10),
+            RedemptionInstructions: "Show the coupon at check-in."));
+        Assert.Equal(BusinessOfferStatus.Draft, createdOffer.Status);
+        Assert.Equal(HttpStatusCode.NoContent, (await business.Client.PostAsync($"/api/business/offers/{createdOffer.Id}/submit", null)).StatusCode);
+
+        await _factory.WithDbContextAsync(async db =>
+        {
+            var offer = await db.BusinessOffers.SingleAsync(item => item.Id == createdOffer.Id);
+            offer.Status = BusinessOfferStatus.Active;
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        var createdChallenge = await PostAndReadAsync<EventChallengeResponse>(business.Client, $"/api/business/events/{createdEvent.Id}/challenge", new CreateEventChallengeRequest(
+            Prompt: "What would make this your ideal night out?",
+            RewardType: RewardType.Coupon,
+            RewardDescription: "VIP lounge access",
+            MaxWinners: 1,
+            ExpiryDate: DateTime.UtcNow.AddDays(9)));
+        Assert.Equal(ChallengeStatus.Draft, createdChallenge.Status);
+        Assert.Equal(HttpStatusCode.NoContent, (await business.Client.PostAsync($"/api/business/challenges/{createdChallenge.Id}/submit", null)).StatusCode);
+
+        await _factory.WithDbContextAsync(async db =>
+        {
+            var challenge = await db.EventChallenges.SingleAsync(item => item.Id == createdChallenge.Id);
+            challenge.Status = ChallengeStatus.Active;
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        var claimResponse = await fan.Client.PostAsync($"/api/business-events/{createdEvent.Id}/offers/{createdOffer.Id}/claim", null);
+        claimResponse.EnsureSuccessStatusCode();
+
+        var challengeResponse = await fan.Client.PostAsJsonAsync(
+            $"/api/business-events/{createdEvent.Id}/challenge/respond",
+            new SubmitChallengeResponseRequest("A playful crowd, good music, and easy ways to connect."));
+        challengeResponse.EnsureSuccessStatusCode();
+
+        var responses = await business.Client.GetFromJsonAsync<List<ChallengeResponseItem>>(
+            $"/api/business/challenges/{createdChallenge.Id}/responses",
+            TestJson.Default);
+        Assert.NotNull(responses);
+        Assert.Single(responses);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await business.Client.PostAsJsonAsync(
+            $"/api/business/challenges/{createdChallenge.Id}/responses/{responses[0].Id}/win",
+            new MarkWinnerRequest("VIP-WIN", "See host at check-in"))).StatusCode);
+
+        var analytics = await business.Client.GetFromJsonAsync<BusinessAnalyticsResponse>("/api/business/analytics", TestJson.Default);
+        Assert.NotNull(analytics);
+        Assert.Equal(1, analytics.TotalEvents);
+        Assert.Equal(1, analytics.PublishedEvents);
+        Assert.Equal(1, analytics.TotalLikes);
+        Assert.Equal(1, analytics.TotalSaves);
+        Assert.Equal(1, analytics.TotalRegistrations);
+        Assert.Equal(1, analytics.TotalCouponClaims);
+        Assert.Equal(1, analytics.TotalChallengeResponses);
+        Assert.Equal(1, analytics.TotalWinners);
+        Assert.Single(analytics.EventBreakdown);
+        Assert.Equal(createdEvent.Id, analytics.EventBreakdown[0].EventId);
+    }
+
+    [Fact]
     public async Task Auth_Profile_Media_And_DeleteAccount_Flow_Works()
     {
         await _factory.ResetStateAsync();
@@ -327,6 +457,23 @@ public class ApiWorkflowTests : IClassFixture<TestApiFactory>
     {
         var client = _factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(
+            Username: username,
+            Email: $"{username}@example.com",
+            Password: "Password123!"));
+
+        response.EnsureSuccessStatusCode();
+
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>(TestJson.Default);
+        Assert.NotNull(auth);
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.Token);
+        return new TestSession(client, auth.User);
+    }
+
+    private async Task<TestSession> RegisterBusinessAsync(string username)
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/auth/business/register", new RegisterBusinessRequest(
             Username: username,
             Email: $"{username}@example.com",
             Password: "Password123!"));

@@ -30,6 +30,22 @@ public class AppDbContext : DbContext
     public DbSet<VerificationAttempt> VerificationAttempts => Set<VerificationAttempt>();
     public DbSet<VerificationEvent> VerificationEvents => Set<VerificationEvent>();
 
+    // Business Partner
+    public DbSet<BusinessCategory> BusinessCategories => Set<BusinessCategory>();
+    public DbSet<BusinessPartner> BusinessPartners => Set<BusinessPartner>();
+    public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
+    public DbSet<BusinessEvent> BusinessEvents => Set<BusinessEvent>();
+    public DbSet<BusinessEventImage> BusinessEventImages => Set<BusinessEventImage>();
+    public DbSet<BusinessOffer> BusinessOffers => Set<BusinessOffer>();
+    public DbSet<EventChallenge> EventChallenges => Set<EventChallenge>();
+    public DbSet<ChallengeResponse> ChallengeResponses => Set<ChallengeResponse>();
+    public DbSet<EventLike> EventLikes => Set<EventLike>();
+    public DbSet<EventSave> EventSaves => Set<EventSave>();
+    public DbSet<EventRegistration> EventRegistrations => Set<EventRegistration>();
+    public DbSet<CouponClaim> CouponClaims => Set<CouponClaim>();
+    public DbSet<RewardClaim> RewardClaims => Set<RewardClaim>();
+    public DbSet<BusinessAuditLog> BusinessAuditLogs => Set<BusinessAuditLog>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -264,6 +280,197 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(ei => new { ei.UserId, ei.EventId }).IsUnique();
+        });
+
+        // BusinessPartner
+        modelBuilder.Entity<BusinessCategory>(e =>
+        {
+            e.HasIndex(c => c.Key).IsUnique();
+            e.HasIndex(c => new { c.IsActive, c.SortOrder });
+
+            e.HasData(
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a01"), Key = "bar-nightclub", DisplayName = "Bar / Nightclub", SortOrder = 10, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a02"), Key = "restaurant-cafe", DisplayName = "Restaurant / Cafe", SortOrder = 20, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a03"), Key = "fitness-wellness", DisplayName = "Fitness / Wellness", SortOrder = 30, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a04"), Key = "entertainment", DisplayName = "Entertainment", SortOrder = 40, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a05"), Key = "retail", DisplayName = "Retail", SortOrder = 50, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a06"), Key = "events-experiences", DisplayName = "Events & Experiences", SortOrder = 60, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a07"), Key = "beauty-spa", DisplayName = "Beauty & Spa", SortOrder = 70, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a08"), Key = "travel-hospitality", DisplayName = "Travel & Hospitality", SortOrder = 80, IsActive = true },
+                new BusinessCategory { Id = Guid.Parse("1d0c0a0b-3627-4f35-9208-cf0e13a89a09"), Key = "other", DisplayName = "Other", SortOrder = 90, IsActive = true }
+            );
+        });
+
+        modelBuilder.Entity<BusinessPartner>(e =>
+        {
+            e.HasOne(b => b.User)
+                .WithMany()
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(b => b.Profile)
+                .WithOne(p => p.BusinessPartner)
+                .HasForeignKey<BusinessProfile>(p => p.BusinessPartnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(b => b.UserId).IsUnique();
+            e.HasIndex(b => b.Status);
+        });
+
+        // BusinessEvent
+        modelBuilder.Entity<BusinessEvent>(e =>
+        {
+            e.HasOne(ev => ev.BusinessPartner)
+                .WithMany(b => b.Events)
+                .HasForeignKey(ev => ev.BusinessPartnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(ev => ev.BusinessPartnerId);
+            e.HasIndex(ev => ev.Status);
+            e.HasIndex(ev => ev.StartDate);
+        });
+
+        // BusinessEventImage
+        modelBuilder.Entity<BusinessEventImage>(e =>
+        {
+            e.Property(i => i.Url).HasColumnType("text");
+
+            e.HasOne(i => i.BusinessEvent)
+                .WithMany(ev => ev.Images)
+                .HasForeignKey(i => i.BusinessEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // BusinessOffer
+        modelBuilder.Entity<BusinessOffer>(e =>
+        {
+            e.HasOne(o => o.BusinessEvent)
+                .WithMany(ev => ev.Offers)
+                .HasForeignKey(o => o.BusinessEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(o => o.BusinessEventId);
+            e.HasIndex(o => o.Status);
+        });
+
+        // EventChallenge
+        modelBuilder.Entity<EventChallenge>(e =>
+        {
+            e.HasOne(c => c.BusinessEvent)
+                .WithOne(ev => ev.Challenge)
+                .HasForeignKey<EventChallenge>(c => c.BusinessEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ChallengeResponse
+        modelBuilder.Entity<ChallengeResponse>(e =>
+        {
+            e.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(r => r.EventChallenge)
+                .WithMany(c => c.Responses)
+                .HasForeignKey(r => r.EventChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One response per user per challenge
+            e.HasIndex(r => new { r.UserId, r.EventChallengeId }).IsUnique();
+            e.HasIndex(r => new { r.EventChallengeId, r.Status });
+        });
+
+        // EventLike
+        modelBuilder.Entity<EventLike>(e =>
+        {
+            e.HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(l => l.BusinessEvent)
+                .WithMany(ev => ev.Likes)
+                .HasForeignKey(l => l.BusinessEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(l => new { l.UserId, l.BusinessEventId }).IsUnique();
+        });
+
+        // EventSave
+        modelBuilder.Entity<EventSave>(e =>
+        {
+            e.HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(s => s.BusinessEvent)
+                .WithMany(ev => ev.Saves)
+                .HasForeignKey(s => s.BusinessEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(s => new { s.UserId, s.BusinessEventId }).IsUnique();
+        });
+
+        // EventRegistration
+        modelBuilder.Entity<EventRegistration>(e =>
+        {
+            e.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(r => r.BusinessEvent)
+                .WithMany(ev => ev.Registrations)
+                .HasForeignKey(r => r.BusinessEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(r => new { r.UserId, r.BusinessEventId }).IsUnique();
+        });
+
+        // CouponClaim
+        modelBuilder.Entity<CouponClaim>(e =>
+        {
+            e.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(c => c.BusinessOffer)
+                .WithMany(o => o.Claims)
+                .HasForeignKey(c => c.BusinessOfferId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(c => new { c.UserId, c.BusinessOfferId }).IsUnique();
+        });
+
+        // RewardClaim
+        modelBuilder.Entity<RewardClaim>(e =>
+        {
+            e.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(r => r.EventChallenge)
+                .WithMany(c => c.RewardClaims)
+                .HasForeignKey(r => r.EventChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(r => r.ChallengeResponse)
+                .WithMany()
+                .HasForeignKey(r => r.ChallengeResponseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasIndex(r => new { r.UserId, r.EventChallengeId }).IsUnique();
+        });
+
+        // BusinessAuditLog
+        modelBuilder.Entity<BusinessAuditLog>(e =>
+        {
+            e.HasIndex(a => a.CreatedAt);
+            e.HasIndex(a => a.TargetPartnerId);
+            e.HasIndex(a => a.TargetEventId);
         });
     }
 }

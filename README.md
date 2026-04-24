@@ -1,6 +1,6 @@
 # Triad
 
-Triad is a dating and social discovery product built around singles, couples, and group-aware interactions. This repo currently contains the backend API, the native iOS client, and a lightweight admin dashboard for moderation and analytics.
+Triad is a dating and social discovery product built around singles, couples, and group-aware interactions. This repo currently contains the backend API, the native iOS client, a lightweight admin dashboard for moderation and analytics, and a new business partner portal.
 
 The product name is `Triad`, while parts of the codebase still use the older `ThirdWheel` namespace and app names. When you see `ThirdWheel.API` or `ThirdWheelNative`, they are part of the same product.
 
@@ -10,8 +10,9 @@ The active surfaces in this repository are:
 
 - `backend/ThirdWheel.API`: ASP.NET Core 10 API with PostgreSQL, JWT auth, SignalR chat, local media storage, rate limiting, and OpenTelemetry
 - `IOSNative/ThirdWheelNative`: native SwiftUI iOS app used as the primary client in this repo
-- `admin/`: static admin dashboard shell for user, moderation, and geography views backed by `/api/admin/*`
+- `admin/`: Next.js admin dashboard shell for user, moderation, geography, and business review views backed by `/api/admin/*`
 - `web/triad-web`: consumer-facing Next.js web app that mirrors the iOS product flows for desktop, tablet, and mobile web
+- `web/triad-business`: business partner portal for onboarding, event/offer/challenge management, analytics, and settings
 
 The backend is the source of truth for product behavior. The iOS app is the main end-user client here today.
 
@@ -22,6 +23,7 @@ Triad/
 ├── admin/                         # Static admin dashboard shell
 ├── backend/ThirdWheel.API/        # ASP.NET Core API
 ├── IOSNative/                     # Native SwiftUI app + Xcode project
+├── web/triad-business/            # Business partner Next.js portal
 ├── web/triad-web/                 # Consumer Next.js web app
 ├── scripts/
 │   ├── common/                    # Shared shell helpers
@@ -51,7 +53,8 @@ Triad currently supports:
 - event browsing and interest toggling
 - Impress Me prompt-response flows before or after a match
 - a verification framework with attempt tracking, status history, expiry handling, and trust badges
-- admin-safe user, moderation, and geography views via `/api/admin/*`
+- admin-safe user, moderation, geography, and business review views via `/api/admin/*`
+- business partner onboarding, approval, events, offers, private challenge responses, reward issuance, and aggregate analytics
 
 ## Quick Start
 
@@ -107,7 +110,21 @@ Useful local URL:
 
 The web container reads `WEB_PUBLIC_API_ORIGIN` at build time so browser traffic points at the correct API origin.
 
-### 6. Run The Native iOS App
+### 6. Start The Business Partner Portal
+
+```bash
+cd web/triad-business
+npm install
+npm run dev
+```
+
+Useful local URL:
+
+- `http://localhost:3002`
+
+Set `NEXT_PUBLIC_API_ORIGIN` if your API is not running at `http://localhost:5127`.
+
+### 7. Run The Native iOS App
 
 ```bash
 ./scripts/mobile/run-ios.sh
@@ -297,15 +314,19 @@ Key app files:
 
 ### Admin Surface
 
-`admin/` is a lightweight static dashboard shell. It reads from admin-safe endpoints and currently focuses on:
+`admin/` is a lightweight Next.js dashboard shell. It reads from admin-safe endpoints and currently focuses on:
 
 - user list summaries
 - online user summaries
 - geography analytics
 - moderation analytics
+- pending business partner approvals
+- pending business event, offer, and challenge approvals
+- business audit history
 
 It is useful for internal demos and operations, but it is not a full production admin product yet.
 When started through Docker, the admin container serves the static dashboard and proxies `/api/*` requests to the `api` service.
+For the business review pages, paste an admin JWT into the header token field. The dashboard stores it in `localStorage` under `triad.admin.token` and sends it as a bearer token on `/api/admin/business/*` requests.
 
 ### Consumer Web Surface
 
@@ -317,6 +338,24 @@ When started through Docker, the admin container serves the static dashboard and
 - Docker multi-stage builds with Next standalone output
 
 When started through Docker, it serves the consumer product on port `3000` by default.
+
+### Business Partner Web Surface
+
+`web/triad-business/` is the business partner portal. It uses:
+
+- Next.js App Router
+- React + TypeScript
+- React Query
+- the same API origin contract exposed through `NEXT_PUBLIC_API_ORIGIN`
+
+The current MVP routes cover:
+
+- login and business registration
+- onboarding and profile management
+- event creation, editing, submission, and image uploads
+- event-level offers
+- optional event challenges, response review, and winner selection
+- aggregate analytics and business settings
 
 ## API And Realtime Surface
 
@@ -340,6 +379,10 @@ Base REST prefix: `/api`
 | Events | `GET /api/event`, `POST /api/event/{eventId}/interest`, `POST /api/event`, `DELETE /api/event/cleanup`, `DELETE /api/event/{id}` |
 | Impress Me | `POST /api/impress-me`, `GET /api/impress-me/inbox`, `GET /api/impress-me/summary`, `GET /api/impress-me/{id}`, `POST /api/impress-me/{id}/respond`, `POST /api/impress-me/{id}/review`, `POST /api/impress-me/{id}/accept`, `POST /api/impress-me/{id}/decline` |
 | Admin | `GET /api/admin/users`, `GET /api/admin/users/{userId}`, `GET /api/admin/online-users`, `GET /api/admin/moderation-analytics`, `DELETE /api/admin/seed-users`, `DELETE /api/admin/seed-events`, `POST /api/admin/seed-user` |
+| Business partner auth | `POST /api/auth/business/register`, `POST /api/auth/login` |
+| Business partner portal | `GET /api/business/categories`, `GET /api/business/me`, `PUT /api/business/profile`, `POST /api/business/profile/logo`, `GET /api/business/events`, `POST /api/business/events`, `PUT /api/business/events/{id}`, `POST /api/business/events/{id}/submit`, `POST /api/business/events/{id}/offers`, `POST /api/business/events/{id}/challenge`, `GET /api/business/challenges/{id}/responses`, `POST /api/business/challenges/{id}/responses/{responseId}/win`, `GET /api/business/analytics` |
+| Public business content | `GET /api/business-events`, `GET /api/business-events/{id}`, `POST /api/business-events/{id}/like`, `POST /api/business-events/{id}/save`, `POST /api/business-events/{id}/register`, `GET /api/business-events/{id}/offers`, `POST /api/business-events/{id}/offers/{offerId}/claim`, `GET /api/business-events/{id}/challenge`, `POST /api/business-events/{id}/challenge/respond` |
+| Business admin | `GET /api/admin/business/partners`, `POST /api/admin/business/partners/{id}/approve`, `POST /api/admin/business/partners/{id}/reject`, `POST /api/admin/business/partners/{id}/suspend`, `GET /api/admin/business/events`, `GET /api/admin/business/offers`, `GET /api/admin/business/challenges`, `GET /api/admin/business/audit` |
 
 ### Realtime And Utility Endpoints
 

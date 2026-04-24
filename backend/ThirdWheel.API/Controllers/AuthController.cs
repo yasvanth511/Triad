@@ -24,6 +24,20 @@ public class AuthController : BaseController
         }
     }
 
+    [HttpPost("business/register")]
+    public async Task<ActionResult<AuthResponse>> RegisterBusiness([FromBody] RegisterBusinessRequest req)
+    {
+        try
+        {
+            var result = await _authService.RegisterBusinessAsync(req);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest req)
     {

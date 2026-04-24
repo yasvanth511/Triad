@@ -107,6 +107,9 @@ public class User
 
     public bool IsBanned { get; set; }
 
+    [MaxLength(20)]
+    public string Role { get; set; } = AppRoles.User;
+
     // Navigation
     public List<UserPhoto> Photos { get; set; } = new();
     public List<UserVideo> Videos { get; set; } = new();

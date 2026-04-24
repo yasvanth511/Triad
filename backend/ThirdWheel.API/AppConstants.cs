@@ -1,5 +1,18 @@
 namespace ThirdWheel.API;
 
+public static class AppRoles
+{
+    public const string User = "User";
+    public const string BusinessPartner = "BusinessPartner";
+    public const string Admin = "Admin";
+}
+
+public static class AppPolicies
+{
+    public const string BusinessPartner = "RequireBusinessPartner";
+    public const string Admin = "RequireAdmin";
+}
+
 /// <summary>Centralised application-wide constants. Keep business rules out of services.</summary>
 public static class AppConstants
 {
@@ -36,4 +49,17 @@ public static class AppConstants
     public const int SpamStrikesBeforeBan = 3;
     public const int RepeatedMessageThreshold = 3;
     public const int RepeatedMessageWindowMinutes = 5;
+
+    // Business Partner
+    public const int MaxBusinessEventImages = 8;
+    public const int MaxBusinessEventTitleLength = 200;
+    public const int MaxBusinessEventDescriptionLength = 2000;
+    public const int MaxBusinessOfferTitleLength = 200;
+    public const int MaxBusinessOfferDescriptionLength = 1000;
+    public const int MaxBusinessChallengePromptLength = 500;
+    public const int MaxChallengeResponseLength = 1000;
+    public const int MaxBusinessNameLength = 200;
+    public const int MaxBusinessDescriptionLength = 1000;
+    public const int MaxBusinessWebsiteLength = 500;
+    public const int MaxRejectionReasonLength = 500;
 }

@@ -8,6 +8,11 @@ const NAV_ITEMS = [
   { href: '/online-users', label: 'Online Users' },
   { href: '/geography', label: 'Geography Analytics' },
   { href: '/moderation', label: 'Moderation Analytics' },
+  { href: '/businesses', label: 'Pending Businesses' },
+  { href: '/business-events', label: 'Pending Events' },
+  { href: '/business-offers', label: 'Pending Offers' },
+  { href: '/business-challenges', label: 'Pending Challenges' },
+  { href: '/business-audit', label: 'Business Audit' },
 ] as const;
 
 export default function Sidebar() {

@@ -47,6 +47,349 @@ namespace ThirdWheel.API.Migrations
                     b.ToTable("Blocks");
                 });
 
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("AdminUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("TargetChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetOfferId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetPartnerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("TargetEventId");
+
+                    b.HasIndex("TargetPartnerId");
+
+                    b.ToTable("BusinessAuditLogs");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessPartnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExternalTicketUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<decimal?>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("State")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessPartnerId");
+
+                    b.HasIndex("StartDate");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("BusinessEvents");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessEventImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessEventId");
+
+                    b.ToTable("BusinessEventImages");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessOffer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("ClaimLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OfferType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RedemptionInstructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessEventId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("BusinessOffers");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessPartner", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("BusinessPartners");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("BusinessName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("BusinessPartnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("State")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessPartnerId")
+                        .IsUnique();
+
+                    b.ToTable("BusinessProfiles");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.ChallengeResponse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EventChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ResponseText")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventChallengeId", "Status");
+
+                    b.HasIndex("UserId", "EventChallengeId")
+                        .IsUnique();
+
+                    b.ToTable("ChallengeResponses");
+                });
+
             modelBuilder.Entity("ThirdWheel.API.Models.Couple", b =>
                 {
                     b.Property<Guid>("Id")
@@ -70,6 +413,37 @@ namespace ThirdWheel.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Couples");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.CouponClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessOfferId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ClaimedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRedeemed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("RedeemedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessOfferId");
+
+                    b.HasIndex("UserId", "BusinessOfferId")
+                        .IsUnique();
+
+                    b.ToTable("CouponClaims");
                 });
 
             modelBuilder.Entity("ThirdWheel.API.Models.Event", b =>
@@ -127,6 +501,54 @@ namespace ThirdWheel.API.Migrations
                     b.ToTable("Events");
                 });
 
+            modelBuilder.Entity("ThirdWheel.API.Models.EventChallenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MaxWinners")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("RewardDescription")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("RewardType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessEventId")
+                        .IsUnique();
+
+                    b.ToTable("EventChallenges");
+                });
+
             modelBuilder.Entity("ThirdWheel.API.Models.EventInterest", b =>
                 {
                     b.Property<Guid>("Id")
@@ -150,6 +572,81 @@ namespace ThirdWheel.API.Migrations
                         .IsUnique();
 
                     b.ToTable("EventInterests");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventLike", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessEventId");
+
+                    b.HasIndex("UserId", "BusinessEventId")
+                        .IsUnique();
+
+                    b.ToTable("EventLikes");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventRegistration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessEventId");
+
+                    b.HasIndex("UserId", "BusinessEventId")
+                        .IsUnique();
+
+                    b.ToTable("EventRegistrations");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventSave", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BusinessEventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessEventId");
+
+                    b.HasIndex("UserId", "BusinessEventId")
+                        .IsUnique();
+
+                    b.ToTable("EventSaves");
                 });
 
             modelBuilder.Entity("ThirdWheel.API.Models.ImpressMePrompt", b =>
@@ -459,6 +956,44 @@ namespace ThirdWheel.API.Migrations
                     b.ToTable("Reports");
                 });
 
+            modelBuilder.Entity("ThirdWheel.API.Models.RewardClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChallengeResponseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EventChallengeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("IssuedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RewardCode")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("RewardNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChallengeResponseId");
+
+                    b.HasIndex("EventChallengeId");
+
+                    b.HasIndex("UserId", "EventChallengeId")
+                        .IsUnique();
+
+                    b.ToTable("RewardClaims");
+                });
+
             modelBuilder.Entity("ThirdWheel.API.Models.SavedProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -636,6 +1171,11 @@ namespace ThirdWheel.API.Migrations
                     b.Property<string>("Religion")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("SexualPreference")
                         .HasMaxLength(100)
@@ -971,6 +1511,110 @@ namespace ThirdWheel.API.Migrations
                     b.Navigation("BlockerUser");
                 });
 
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessEvent", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessPartner", "BusinessPartner")
+                        .WithMany("Events")
+                        .HasForeignKey("BusinessPartnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessPartner");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessEventImage", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessEvent", "BusinessEvent")
+                        .WithMany("Images")
+                        .HasForeignKey("BusinessEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessEvent");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessOffer", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessEvent", "BusinessEvent")
+                        .WithMany("Offers")
+                        .HasForeignKey("BusinessEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessEvent");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessPartner", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessProfile", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessPartner", "BusinessPartner")
+                        .WithOne("Profile")
+                        .HasForeignKey("ThirdWheel.API.Models.BusinessProfile", "BusinessPartnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessPartner");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.ChallengeResponse", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.EventChallenge", "EventChallenge")
+                        .WithMany("Responses")
+                        .HasForeignKey("EventChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("EventChallenge");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.CouponClaim", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessOffer", "BusinessOffer")
+                        .WithMany("Claims")
+                        .HasForeignKey("BusinessOfferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessOffer");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventChallenge", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessEvent", "BusinessEvent")
+                        .WithOne("Challenge")
+                        .HasForeignKey("ThirdWheel.API.Models.EventChallenge", "BusinessEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessEvent");
+                });
+
             modelBuilder.Entity("ThirdWheel.API.Models.EventInterest", b =>
                 {
                     b.HasOne("ThirdWheel.API.Models.Event", "Event")
@@ -986,6 +1630,63 @@ namespace ThirdWheel.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventLike", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessEvent", "BusinessEvent")
+                        .WithMany("Likes")
+                        .HasForeignKey("BusinessEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessEvent");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventRegistration", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessEvent", "BusinessEvent")
+                        .WithMany("Registrations")
+                        .HasForeignKey("BusinessEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessEvent");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventSave", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.BusinessEvent", "BusinessEvent")
+                        .WithMany("Saves")
+                        .HasForeignKey("BusinessEventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BusinessEvent");
 
                     b.Navigation("User");
                 });
@@ -1072,6 +1773,33 @@ namespace ThirdWheel.API.Migrations
                     b.Navigation("ReporterUser");
                 });
 
+            modelBuilder.Entity("ThirdWheel.API.Models.RewardClaim", b =>
+                {
+                    b.HasOne("ThirdWheel.API.Models.ChallengeResponse", "ChallengeResponse")
+                        .WithMany()
+                        .HasForeignKey("ChallengeResponseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.EventChallenge", "EventChallenge")
+                        .WithMany("RewardClaims")
+                        .HasForeignKey("EventChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ThirdWheel.API.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChallengeResponse");
+
+                    b.Navigation("EventChallenge");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ThirdWheel.API.Models.SavedProfile", b =>
                 {
                     b.HasOne("ThirdWheel.API.Models.User", "SavedUser")
@@ -1156,6 +1884,33 @@ namespace ThirdWheel.API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessEvent", b =>
+                {
+                    b.Navigation("Challenge");
+
+                    b.Navigation("Images");
+
+                    b.Navigation("Likes");
+
+                    b.Navigation("Offers");
+
+                    b.Navigation("Registrations");
+
+                    b.Navigation("Saves");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessOffer", b =>
+                {
+                    b.Navigation("Claims");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.BusinessPartner", b =>
+                {
+                    b.Navigation("Events");
+
+                    b.Navigation("Profile");
+                });
+
             modelBuilder.Entity("ThirdWheel.API.Models.Couple", b =>
                 {
                     b.Navigation("Members");
@@ -1164,6 +1919,13 @@ namespace ThirdWheel.API.Migrations
             modelBuilder.Entity("ThirdWheel.API.Models.Event", b =>
                 {
                     b.Navigation("Interests");
+                });
+
+            modelBuilder.Entity("ThirdWheel.API.Models.EventChallenge", b =>
+                {
+                    b.Navigation("Responses");
+
+                    b.Navigation("RewardClaims");
                 });
 
             modelBuilder.Entity("ThirdWheel.API.Models.ImpressMeSignal", b =>

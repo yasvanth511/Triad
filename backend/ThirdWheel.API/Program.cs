@@ -82,7 +82,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AppPolicies.BusinessPartner, policy =>
+        policy.RequireRole(AppRoles.BusinessPartner));
+
+    options.AddPolicy(AppPolicies.Admin, policy =>
+        policy.RequireRole(AppRoles.Admin));
+});
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("postgres");
 
@@ -102,6 +109,14 @@ builder.Services.AddScoped<PromptGeneratorService>();
 builder.Services.AddScoped<ImpressMeService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddVerificationFramework(builder.Configuration);
+
+// Business Partner services
+builder.Services.AddScoped<BusinessPartnerService>();
+builder.Services.AddScoped<BusinessEventService>();
+builder.Services.AddScoped<BusinessOfferService>();
+builder.Services.AddScoped<BusinessChallengeService>();
+builder.Services.AddScoped<BusinessAnalyticsService>();
+builder.Services.AddScoped<BusinessAdminService>();
 
 // Controllers + SignalR
 builder.Services.AddControllers();

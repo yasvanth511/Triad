@@ -13,4 +13,10 @@ public abstract class BaseController : ControllerBase
             ?? throw new UnauthorizedAccessException("User not authenticated.");
         return Guid.Parse(claim);
     }
+
+    protected Guid? TryGetUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(claim, out var userId) ? userId : null;
+    }
 }

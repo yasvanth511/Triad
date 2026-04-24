@@ -75,6 +75,62 @@ public class AuthService
         }
     }
 
+    public async Task<AuthResponse> RegisterBusinessAsync(RegisterBusinessRequest req)
+    {
+        using var activity = Telemetry.ActivitySource.StartActivity("auth.register.business");
+
+        try
+        {
+            if (await _db.Users.AnyAsync(u => u.Email == req.Email))
+                throw new InvalidOperationException("Email already registered.");
+
+            if (await _db.Users.AnyAsync(u => u.Username == req.Username))
+                throw new InvalidOperationException("Username already taken.");
+
+            var user = new User
+            {
+                Email = req.Email.ToLowerInvariant(),
+                Username = req.Username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
+                Role = AppRoles.BusinessPartner
+            };
+
+            user.Photos.Add(DefaultProfilePhoto.Create(user.Id));
+            _db.Users.Add(user);
+
+            var partner = new Models.BusinessPartner { UserId = user.Id };
+            _db.BusinessPartners.Add(partner);
+
+            await _db.SaveChangesAsync();
+
+            var savedUser = await _db.Users
+                .AsSplitQuery()
+                .Include(u => u.Photos)
+                .Include(u => u.Videos)
+                .Include(u => u.Interests)
+                .Include(u => u.RedFlags)
+                .Include(u => u.Couple)
+                    .ThenInclude(c => c!.Members)
+                .FirstAsync(u => u.Id == user.Id);
+
+            var token = GenerateToken(savedUser);
+            Telemetry.AuthOperations.Add(1,
+                new KeyValuePair<string, object?>("operation", "register.business"),
+                new KeyValuePair<string, object?>("outcome", "success"));
+            Telemetry.MarkSuccess(activity);
+            return new AuthResponse(token, UserMapper.ToProfileResponse(savedUser));
+        }
+        catch (Exception ex)
+        {
+            Telemetry.AuthOperations.Add(1,
+                new KeyValuePair<string, object?>("operation", "register.business"),
+                new KeyValuePair<string, object?>("outcome", "error"),
+                new KeyValuePair<string, object?>("exception.type", ex.GetType().Name));
+            Telemetry.RecordException(activity, ex);
+            throw;
+        }
+    }
+
     public async Task<AuthResponse> LoginAsync(LoginRequest req)
     {
         using var activity = Telemetry.ActivitySource.StartActivity("auth.login");
@@ -125,7 +181,8 @@ public class AuthService
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("username", user.Username)
+            new Claim("username", user.Username),
+            new Claim(ClaimTypes.Role, user.Role)
         };
 
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
