@@ -43,11 +43,13 @@ Services:
   api      ASP.NET Core backend
   admin    Internal admin dashboard
   web      Consumer Next.js web app
+  triad-business
+           Business partner Next.js portal
 
 Key env vars:
   DOCKER_ENV_FILE, DOCKER_IMAGE_NAME, DOCKER_IMAGE_TAG
   DOCKER_CONTAINER_NAME, DOCKER_PROJECT_NAME, DOCKER_SERVICE
-  DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT, ADMIN_PORT, WEB_PORT
+  DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT, ADMIN_PORT, WEB_PORT, BUSINESS_PORT
 EOF
 }
 
@@ -127,8 +129,27 @@ configure_service() {
         -e "HOSTNAME=0.0.0.0"
       )
       ;;
+    triad-business|business)
+      SERVICE="triad-business"
+      IMAGE_NAME="${BUSINESS_IMAGE_NAME:-triad-business}"
+      IMAGE_TAG="${BUSINESS_IMAGE_TAG:-dev}"
+      CONTAINER_NAME="${BUSINESS_CONTAINER_NAME:-triad-business}"
+      BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/web/triad-business}"
+      DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
+      HOST_PORT="${BUSINESS_PORT:-3002}"
+      CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-3002}"
+      REQUIRES_ENV_FILE=0
+      BUILD_ARGS=(
+        --build-arg "NEXT_PUBLIC_API_ORIGIN=${BUSINESS_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT:-5127}}"
+      )
+      RUN_ARGS=(
+        -e "NEXT_PUBLIC_API_ORIGIN=${BUSINESS_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT:-5127}}"
+        -e "PORT=${CONTAINER_PORT}"
+        -e "HOSTNAME=0.0.0.0"
+      )
+      ;;
     *)
-      fail "unsupported service: $SERVICE (expected api, admin, or web)"
+      fail "unsupported service: $SERVICE (expected api, admin, web, or triad-business)"
       ;;
   esac
 
@@ -157,10 +178,14 @@ export_runtime_env() {
   export ADMIN_IMAGE_TAG="${ADMIN_IMAGE_TAG:-dev}"
   export WEB_IMAGE_NAME="${WEB_IMAGE_NAME:-triad-web}"
   export WEB_IMAGE_TAG="${WEB_IMAGE_TAG:-dev}"
+  export BUSINESS_IMAGE_NAME="${BUSINESS_IMAGE_NAME:-triad-business}"
+  export BUSINESS_IMAGE_TAG="${BUSINESS_IMAGE_TAG:-dev}"
   export API_PORT="${API_PORT:-5127}"
   export ADMIN_PORT="${ADMIN_PORT:-5173}"
   export WEB_PORT="${WEB_PORT:-3000}"
+  export BUSINESS_PORT="${BUSINESS_PORT:-3002}"
   export WEB_PUBLIC_API_ORIGIN="${WEB_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT}}"
+  export BUSINESS_PUBLIC_API_ORIGIN="${BUSINESS_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT}}"
 }
 
 build_image() {
@@ -192,7 +217,7 @@ run_direct() {
 }
 
 compose_up() {
-  if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" ]]; then
+  if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" || "$SERVICE" == "triad-business" ]]; then
     ensure_env_file
   fi
   export_runtime_env
@@ -272,7 +297,7 @@ restart_all() {
 
 rebuild_all() {
   if [[ -n "$COMPOSE_FILE" ]]; then
-    if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" ]]; then
+    if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" || "$SERVICE" == "triad-business" ]]; then
       ensure_env_file
     fi
     export_runtime_env

@@ -30,7 +30,8 @@ const schema = z.object({
   expiryDate: z.string().optional(),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormValues = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function ChallengePage() {
   const { id } = useParams<{ id: string }>();
@@ -51,7 +52,7 @@ export default function ChallengePage() {
     retry: false,
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues, unknown, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { rewardType: "Coupon" },
   });
@@ -154,7 +155,7 @@ export default function ChallengePage() {
         </div>
       )}
 
-      {hasChallenge && (
+      {challenge && (
         <div className="glass-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-[var(--color-muted-ink)]">
             {challenge.responseCount} responses · {challenge.winnerCount} winners

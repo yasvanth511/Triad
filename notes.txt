@@ -1,0 +1,1 @@
+- Never commit secrets. Do not read, print, or rewrite `.env*`, local deployment envs, signing files, or real credentials.

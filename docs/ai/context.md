@@ -89,12 +89,12 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 
 ## Deployment Status
 
-- Local Docker Compose runs API, admin, and consumer web.
+- Local Docker Compose runs API, admin, consumer web, and business portal.
 - API is containerized with `backend/ThirdWheel.API/Dockerfile`.
 - Consumer web uses standalone Next output and Docker.
+- Business portal uses standalone Next output and Docker through service `triad-business`.
 - Admin Next.js static export is hosted by `Admin.Host` in Docker.
-- Vercel scripts deploy `web/triad-web` and `admin/nextjs-admin`; backend deploy script builds/pushes an OCI image and can run a release hook.
-- Business portal has local npm scripts but no Docker/deploy script found in the current scan.
+- Vercel scripts deploy `web/triad-web`, `web/triad-business`, and `admin/nextjs-admin`; backend deploy script builds/pushes an OCI image and can run a release hook.
 
 ## Known Gaps And Assumptions
 

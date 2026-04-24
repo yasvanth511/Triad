@@ -7,7 +7,7 @@ Use this map before reading source. It lists the files most likely to matter for
 - `backend/ThirdWheel.API/`: ASP.NET Core API, EF models, controllers, services, migrations, Dockerfile.
 - `IOSNative/ThirdWheelNative/`: SwiftUI iOS app source.
 - `web/triad-web/`: consumer Next.js app.
-- `web/triad-business/`: business partner Next.js app.
+- `web/triad-business/`: business partner Next.js app and Dockerfile.
 - `admin/nextjs-admin/`: active Next.js admin dashboard.
 - `admin/Admin.Host/`: ASP.NET static host and API proxy for admin deployment.
 - `admin/`: also contains older static admin files; verify before editing them.
@@ -88,6 +88,7 @@ Use this map before reading source. It lists the files most likely to matter for
 - Local compose: `docker-compose.yml`.
 - Backend container: `backend/ThirdWheel.API/Dockerfile`, `scripts/deploy/backend-api.sh`.
 - Consumer web container: `web/triad-web/Dockerfile`.
+- Business portal container: `web/triad-business/Dockerfile`.
 - Admin container: `admin/Dockerfile`.
-- Vercel deploy: `scripts/deploy/web-app.sh`, `scripts/deploy/admin-app.sh`.
+- Vercel deploy: `scripts/deploy/web-app.sh`, `scripts/deploy/business-app.sh`, `scripts/deploy/admin-app.sh`.
 - Full deploy coordinator: `scripts/deploy/deploy.sh`.

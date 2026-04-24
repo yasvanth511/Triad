@@ -23,7 +23,8 @@ const schema = z.object({
   expiryDate: z.string().optional(),
   redemptionInstructions: z.string().optional(),
 });
-type FormData = z.infer<typeof schema>;
+type FormValues = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function EventOffersPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +38,7 @@ export default function EventOffersPage() {
     enabled: !!token,
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues, unknown, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { offerType: "Coupon" },
   });
@@ -49,7 +50,7 @@ export default function EventOffersPage() {
         title: data.title,
         description: data.description,
         couponCode: data.couponCode,
-        claimLimit: data.claimLimit !== "" ? data.claimLimit as number : undefined,
+        claimLimit: data.claimLimit !== "" ? data.claimLimit : undefined,
         expiryDate: data.expiryDate || undefined,
         redemptionInstructions: data.redemptionInstructions,
       }),

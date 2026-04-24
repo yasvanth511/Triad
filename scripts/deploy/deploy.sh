@@ -8,14 +8,15 @@ ROOT_DIR="$(repo_root_from_script "${BASH_SOURCE[0]}")"
 RUN_BACKEND=0
 RUN_WEB=0
 RUN_ADMIN=0
+RUN_BUSINESS=0
 EXPLICIT_SELECTION=0
 DEPLOY_ENVIRONMENT="production"
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/deploy/deploy.sh [--backend] [--web] [--admin] [--all] [--preview|--prod]
+Usage: ./scripts/deploy/deploy.sh [--backend] [--web] [--admin] [--business] [--all] [--preview|--prod]
 
-Default behavior: deploy backend API, web app, and admin app to production.
+Default behavior: deploy backend API, web app, admin app, and business app to production.
 EOF
 }
 
@@ -33,10 +34,15 @@ while [[ $# -gt 0 ]]; do
       RUN_ADMIN=1
       EXPLICIT_SELECTION=1
       ;;
+    --business)
+      RUN_BUSINESS=1
+      EXPLICIT_SELECTION=1
+      ;;
     --all)
       RUN_BACKEND=1
       RUN_WEB=1
       RUN_ADMIN=1
+      RUN_BUSINESS=1
       EXPLICIT_SELECTION=1
       ;;
     --preview)
@@ -62,10 +68,12 @@ if [[ "$EXPLICIT_SELECTION" == "0" ]]; then
   if [[ "$DEPLOY_ENVIRONMENT" == "preview" ]]; then
     RUN_WEB=1
     RUN_ADMIN=1
+    RUN_BUSINESS=1
   else
     RUN_BACKEND=1
     RUN_WEB=1
     RUN_ADMIN=1
+    RUN_BUSINESS=1
   fi
 fi
 
@@ -86,5 +94,13 @@ if [[ "$RUN_ADMIN" == "1" ]]; then
     "$ROOT_DIR/scripts/deploy/admin-app.sh" --prod
   else
     "$ROOT_DIR/scripts/deploy/admin-app.sh" --preview
+  fi
+fi
+
+if [[ "$RUN_BUSINESS" == "1" ]]; then
+  if [[ "$DEPLOY_ENVIRONMENT" == "production" ]]; then
+    "$ROOT_DIR/scripts/deploy/business-app.sh" --prod
+  else
+    "$ROOT_DIR/scripts/deploy/business-app.sh" --preview
   fi
 fi

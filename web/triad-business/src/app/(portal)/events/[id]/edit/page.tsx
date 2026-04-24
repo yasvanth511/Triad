@@ -27,7 +27,8 @@ const schema = z.object({
   price: z.coerce.number().min(0).optional().or(z.literal("")),
   externalTicketUrl: z.string().url().optional().or(z.literal("")),
 });
-type FormData = z.infer<typeof schema>;
+type FormValues = z.input<typeof schema>;
+type FormData = z.output<typeof schema>;
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
@@ -45,7 +46,7 @@ export default function EditEventPage() {
     enabled: !!token,
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues, unknown, FormData>({
     resolver: zodResolver(schema),
   });
 
@@ -79,8 +80,8 @@ export default function EditEventPage() {
         state: data.state,
         startDate: data.startDate || undefined,
         endDate: data.endDate || undefined,
-        capacity: data.capacity !== "" ? data.capacity as number : undefined,
-        price: data.price !== "" ? data.price as number : undefined,
+        capacity: data.capacity !== "" ? data.capacity : undefined,
+        price: data.price !== "" ? data.price : undefined,
         externalTicketUrl: data.externalTicketUrl || undefined,
       }),
     onSuccess: () => {

@@ -45,7 +45,8 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - API via Docker: `docker compose up -d --build api`
 - Admin via Docker: `docker compose up -d --build admin`
 - Consumer web via Docker: `docker compose up -d --build web`
-- Docker helper: `./scripts/docker.sh up`, `./scripts/docker.sh up admin`, `./scripts/docker.sh up web`, `./scripts/docker.sh logs`, `./scripts/docker.sh down`
+- Business portal via Docker: `docker compose up -d --build triad-business`
+- Docker helper: `./scripts/docker.sh up`, `./scripts/docker.sh up admin`, `./scripts/docker.sh up web`, `./scripts/docker.sh up triad-business`, `./scripts/docker.sh logs`, `./scripts/docker.sh down`
 - Backend tests: `./scripts/run/test-backend.sh unit`, `./scripts/run/test-backend.sh integration`, `./scripts/run/test-backend.sh all`
 - Consumer web local: `cd web/triad-web && npm install && npm run dev`
 - Consumer web checks: `cd web/triad-web && npm run lint && npm run typecheck && npm run build`
@@ -54,7 +55,7 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - Admin Next.js local: `cd admin/nextjs-admin && npm install && npm run dev`
 - Admin build/export: `cd admin/nextjs-admin && npm run build`
 - iOS simulator flow: `./scripts/mobile/run-ios.sh`
-- Deploy helpers: `./scripts/deploy/deploy.sh --all --prod`, `./scripts/deploy/deploy.sh --web --admin --preview`
+- Deploy helpers: `./scripts/deploy/deploy.sh --all --prod`, `./scripts/deploy/deploy.sh --web --admin --business --preview`
 - Seed demo data: `pwsh -File seed.ps1` after confirming target API and destructive seed behavior.
 
 ## Coding Standards
@@ -85,7 +86,6 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 
 ## Security And Privacy Rules
 
-- Never commit secrets. Do not read, print, or rewrite `.env*`, local deployment envs, signing files, or real credentials.
 - Required runtime secrets include `ConnectionStrings__DefaultConnection`, `Jwt__Key`, and deployment/Vercel/registry credentials.
 - Keep CORS origin-locked outside development.
 - User coordinates are intentionally rounded in EF precision for privacy; do not silently weaken that behavior.
@@ -138,6 +138,6 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - Consumer web has TODOs for richer media management, audio/video playback/upload, couple-specific surfaces, and SignalR realtime chat.
 - Verification backend is broader than currently surfaced in clients and uses mock/manual provider modes.
 - Admin has both newer Next.js/Admin.Host and older static root files; verify active path before editing.
-- Business portal appears MVP-level; production completeness for business auth, approval flows, and analytics should be validated.
+- Business portal appears MVP-level; production completeness for business auth, approval flows, analytics, and hosting configuration should be validated.
 - `.env.docker` exists locally and is ignored; never inspect or document its real values.
 - Some generated artifacts appear in the repository history; avoid touching them unless cleanup is explicitly requested.
