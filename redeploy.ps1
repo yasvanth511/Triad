@@ -4,7 +4,7 @@ $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $scriptPath = Join-Path $rootDir "scripts/run/quick-build-deploy.sh"
 
 if ($args.Count -eq 0) {
-  & $scriptPath --backend --admin --web --business --ios
+  & $scriptPath --backend --site --admin --web --business --ios
   exit $LASTEXITCODE
 }
 

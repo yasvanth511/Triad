@@ -61,6 +61,30 @@ services:
     networks:
       - ipv6net
 
+  triad-site:
+    image: ${SITE_IMAGE_NAME:-triad-site}:${SITE_IMAGE_TAG:-dev}
+    build:
+      context: ./web/triad-site
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_TRIAD_WEB_APP_URL: ${SITE_PUBLIC_TRIAD_WEB_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_TRIAD_BUSINESS_APP_URL: ${SITE_PUBLIC_TRIAD_BUSINESS_APP_URL:-http://localhost:3002}
+        NEXT_PUBLIC_APP_STORE_URL: ${SITE_PUBLIC_APP_STORE_URL:-}
+        NEXT_PUBLIC_GOOGLE_PLAY_URL: ${SITE_PUBLIC_GOOGLE_PLAY_URL:-}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${SITE_PUBLIC_CONTACT_EMAIL:-hello@triad.app}
+    environment:
+      NEXT_PUBLIC_TRIAD_WEB_APP_URL: ${SITE_PUBLIC_TRIAD_WEB_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_TRIAD_BUSINESS_APP_URL: ${SITE_PUBLIC_TRIAD_BUSINESS_APP_URL:-http://localhost:3002}
+      NEXT_PUBLIC_APP_STORE_URL: ${SITE_PUBLIC_APP_STORE_URL:-}
+      NEXT_PUBLIC_GOOGLE_PLAY_URL: ${SITE_PUBLIC_GOOGLE_PLAY_URL:-}
+      NEXT_PUBLIC_CONTACT_EMAIL: ${SITE_PUBLIC_CONTACT_EMAIL:-hello@triad.app}
+      PORT: 3003
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "${SITE_PORT:-3003}:3003"
+    networks:
+      - ipv6net
+
 networks:
   ipv6net:
     enable_ipv6: true

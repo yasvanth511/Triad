@@ -43,10 +43,13 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 
 - Prereq check: `./scripts/setup/check-system.sh`
 - API via Docker: `docker compose up -d --build api`
+- Marketing site via Docker: `docker compose up -d --build triad-site`
 - Admin via Docker: `docker compose up -d --build admin`
 - Consumer web via Docker: `docker compose up -d --build web`
 - Business portal via Docker: `docker compose up -d --build triad-business`
-- Docker helper: `./scripts/docker.sh up`, `./scripts/docker.sh up admin`, `./scripts/docker.sh up web`, `./scripts/docker.sh up triad-business`, `./scripts/docker.sh logs`, `./scripts/docker.sh down`
+- Docker helper: `./scripts/docker.sh up`, `./scripts/docker.sh up triad-site`, `./scripts/docker.sh up admin`, `./scripts/docker.sh up web`, `./scripts/docker.sh up triad-business`, `./scripts/docker.sh logs`, `./scripts/docker.sh down`
+- Marketing site local: `cd web/triad-site && npm install && npm run dev`
+- Marketing site checks: `cd web/triad-site && npm run lint && npm run typecheck && npm run build`
 - Backend tests: `./scripts/run/test-backend.sh unit`, `./scripts/run/test-backend.sh integration`, `./scripts/run/test-backend.sh all`
 - Consumer web local: `cd web/triad-web && npm install && npm run dev`
 - Consumer web checks: `cd web/triad-web && npm run lint && npm run typecheck && npm run build`
@@ -66,6 +69,21 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - Keep web API calls in `src/lib/api/client.ts` and `src/lib/api/services.ts`; keep mirrored types in `src/lib/types.ts`.
 - Reuse existing UI primitives, providers, feature folders, `BrandStyle.swift`, `APIClient`, and `SessionStore`.
 - Do not rename `ThirdWheel` namespaces, app IDs, routes, or EF migration history just to match Triad branding.
+
+## Triad Marketing Website Rules
+
+- `web/triad-site` is the public marketing website only.
+- Do not build product workflows in the marketing site.
+- Do not expose admin links publicly.
+- Use 21st.dev only for UI inspiration and component patterns.
+- Use UI/UX Pro Max guidance for visual polish and UX consistency.
+- Use Framer Motion only for subtle, meaningful animations.
+- Keep copy App Store-safe and brand-safe.
+- Keep mobile-first responsiveness.
+- Preserve existing Triad theme if available.
+- Do not change backend APIs unless explicitly asked.
+- Marketing site Docker support lives in `web/triad-site/Dockerfile`, `docker-compose.yml`, `scripts/docker/docker.sh`, and `scripts/deploy/site-app.sh`.
+- Keep marketing site deployment changes scoped to `triad-site` unless explicitly asked.
 
 ## Testing Expectations
 

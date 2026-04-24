@@ -45,11 +45,13 @@ Services:
   web      Consumer Next.js web app
   triad-business
            Business partner Next.js portal
+  triad-site
+           Public marketing website
 
 Key env vars:
   DOCKER_ENV_FILE, DOCKER_IMAGE_NAME, DOCKER_IMAGE_TAG
   DOCKER_CONTAINER_NAME, DOCKER_PROJECT_NAME, DOCKER_SERVICE
-  DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT, ADMIN_PORT, WEB_PORT, BUSINESS_PORT
+  DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT, ADMIN_PORT, WEB_PORT, BUSINESS_PORT, SITE_PORT
 EOF
 }
 
@@ -148,8 +150,35 @@ configure_service() {
         -e "HOSTNAME=0.0.0.0"
       )
       ;;
+    triad-site|site)
+      SERVICE="triad-site"
+      IMAGE_NAME="${SITE_IMAGE_NAME:-triad-site}"
+      IMAGE_TAG="${SITE_IMAGE_TAG:-dev}"
+      CONTAINER_NAME="${SITE_CONTAINER_NAME:-triad-site}"
+      BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/web/triad-site}"
+      DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
+      HOST_PORT="${SITE_PORT:-3003}"
+      CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-3003}"
+      REQUIRES_ENV_FILE=0
+      BUILD_ARGS=(
+        --build-arg "NEXT_PUBLIC_TRIAD_WEB_APP_URL=${SITE_PUBLIC_TRIAD_WEB_APP_URL:-http://localhost:${WEB_PORT:-3000}}"
+        --build-arg "NEXT_PUBLIC_TRIAD_BUSINESS_APP_URL=${SITE_PUBLIC_TRIAD_BUSINESS_APP_URL:-http://localhost:${BUSINESS_PORT:-3002}}"
+        --build-arg "NEXT_PUBLIC_APP_STORE_URL=${SITE_PUBLIC_APP_STORE_URL:-}"
+        --build-arg "NEXT_PUBLIC_GOOGLE_PLAY_URL=${SITE_PUBLIC_GOOGLE_PLAY_URL:-}"
+        --build-arg "NEXT_PUBLIC_CONTACT_EMAIL=${SITE_PUBLIC_CONTACT_EMAIL:-hello@triad.app}"
+      )
+      RUN_ARGS=(
+        -e "NEXT_PUBLIC_TRIAD_WEB_APP_URL=${SITE_PUBLIC_TRIAD_WEB_APP_URL:-http://localhost:${WEB_PORT:-3000}}"
+        -e "NEXT_PUBLIC_TRIAD_BUSINESS_APP_URL=${SITE_PUBLIC_TRIAD_BUSINESS_APP_URL:-http://localhost:${BUSINESS_PORT:-3002}}"
+        -e "NEXT_PUBLIC_APP_STORE_URL=${SITE_PUBLIC_APP_STORE_URL:-}"
+        -e "NEXT_PUBLIC_GOOGLE_PLAY_URL=${SITE_PUBLIC_GOOGLE_PLAY_URL:-}"
+        -e "NEXT_PUBLIC_CONTACT_EMAIL=${SITE_PUBLIC_CONTACT_EMAIL:-hello@triad.app}"
+        -e "PORT=${CONTAINER_PORT}"
+        -e "HOSTNAME=0.0.0.0"
+      )
+      ;;
     *)
-      fail "unsupported service: $SERVICE (expected api, admin, web, or triad-business)"
+      fail "unsupported service: $SERVICE (expected api, admin, web, triad-business, or triad-site)"
       ;;
   esac
 
@@ -180,12 +209,20 @@ export_runtime_env() {
   export WEB_IMAGE_TAG="${WEB_IMAGE_TAG:-dev}"
   export BUSINESS_IMAGE_NAME="${BUSINESS_IMAGE_NAME:-triad-business}"
   export BUSINESS_IMAGE_TAG="${BUSINESS_IMAGE_TAG:-dev}"
+  export SITE_IMAGE_NAME="${SITE_IMAGE_NAME:-triad-site}"
+  export SITE_IMAGE_TAG="${SITE_IMAGE_TAG:-dev}"
   export API_PORT="${API_PORT:-5127}"
   export ADMIN_PORT="${ADMIN_PORT:-5173}"
   export WEB_PORT="${WEB_PORT:-3000}"
   export BUSINESS_PORT="${BUSINESS_PORT:-3002}"
+  export SITE_PORT="${SITE_PORT:-3003}"
   export WEB_PUBLIC_API_ORIGIN="${WEB_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT}}"
   export BUSINESS_PUBLIC_API_ORIGIN="${BUSINESS_PUBLIC_API_ORIGIN:-http://localhost:${API_PORT}}"
+  export SITE_PUBLIC_TRIAD_WEB_APP_URL="${SITE_PUBLIC_TRIAD_WEB_APP_URL:-http://localhost:${WEB_PORT}}"
+  export SITE_PUBLIC_TRIAD_BUSINESS_APP_URL="${SITE_PUBLIC_TRIAD_BUSINESS_APP_URL:-http://localhost:${BUSINESS_PORT}}"
+  export SITE_PUBLIC_APP_STORE_URL="${SITE_PUBLIC_APP_STORE_URL:-}"
+  export SITE_PUBLIC_GOOGLE_PLAY_URL="${SITE_PUBLIC_GOOGLE_PLAY_URL:-}"
+  export SITE_PUBLIC_CONTACT_EMAIL="${SITE_PUBLIC_CONTACT_EMAIL:-hello@triad.app}"
 }
 
 build_image() {

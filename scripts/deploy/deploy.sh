@@ -6,6 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/common/deploy.sh"
 
 ROOT_DIR="$(repo_root_from_script "${BASH_SOURCE[0]}")"
 RUN_BACKEND=0
+RUN_SITE=0
 RUN_WEB=0
 RUN_ADMIN=0
 RUN_BUSINESS=0
@@ -14,9 +15,9 @@ DEPLOY_ENVIRONMENT="production"
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/deploy/deploy.sh [--backend] [--web] [--admin] [--business] [--all] [--preview|--prod]
+Usage: ./scripts/deploy/deploy.sh [--backend] [--site] [--web] [--admin] [--business] [--all] [--preview|--prod]
 
-Default behavior: deploy backend API, web app, admin app, and business app to production.
+Default behavior: deploy backend API, marketing site, web app, admin app, and business app to production.
 EOF
 }
 
@@ -24,6 +25,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --backend)
       RUN_BACKEND=1
+      EXPLICIT_SELECTION=1
+      ;;
+    --site)
+      RUN_SITE=1
       EXPLICIT_SELECTION=1
       ;;
     --web)
@@ -40,6 +45,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all)
       RUN_BACKEND=1
+      RUN_SITE=1
       RUN_WEB=1
       RUN_ADMIN=1
       RUN_BUSINESS=1
@@ -66,11 +72,13 @@ done
 
 if [[ "$EXPLICIT_SELECTION" == "0" ]]; then
   if [[ "$DEPLOY_ENVIRONMENT" == "preview" ]]; then
+    RUN_SITE=1
     RUN_WEB=1
     RUN_ADMIN=1
     RUN_BUSINESS=1
   else
     RUN_BACKEND=1
+    RUN_SITE=1
     RUN_WEB=1
     RUN_ADMIN=1
     RUN_BUSINESS=1
@@ -79,6 +87,10 @@ fi
 
 if [[ "$RUN_BACKEND" == "1" ]]; then
   "$ROOT_DIR/scripts/deploy/backend-api.sh"
+fi
+
+if [[ "$RUN_SITE" == "1" ]]; then
+  "$ROOT_DIR/scripts/deploy/site-app.sh"
 fi
 
 if [[ "$RUN_WEB" == "1" ]]; then

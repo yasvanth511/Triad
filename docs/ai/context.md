@@ -7,6 +7,7 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 - ASP.NET Core 10 backend API in `backend/ThirdWheel.API`.
 - Native SwiftUI iOS app in `IOSNative/ThirdWheelNative`.
 - Consumer Next.js web app in `web/triad-web`.
+- Public marketing Next.js website in `web/triad-site`.
 - Business partner Next.js portal in `web/triad-business`.
 - Admin dashboard in `admin/nextjs-admin` with `admin/Admin.Host` for static hosting and API proxying.
 - Backend unit/integration tests in `tests/`.
@@ -78,6 +79,7 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 
 - Consumer web routes: auth, discover, saved, matches, match chat, Impress Me, events, notifications, profile, profile edit, public profile detail.
 - Consumer web structure: `src/app` for routes, `src/features` for screens, `src/components/ui` for primitives, `src/components/domain` for product widgets.
+- Marketing site structure: `web/triad-site` is a standalone public Next.js app for brand-safe landing, features, business, safety, download, and contact/waitlist CTAs. It uses Framer Motion variants from `src/lib/animations.ts` and has Docker support through `web/triad-site/Dockerfile`, compose service `triad-site`, the Docker helper, and `scripts/deploy/site-app.sh`.
 - Business portal routes: login/register, dashboard, onboarding, profile, events list/detail/new/edit/images/offers/challenge, offers, analytics, settings.
 - Admin routes: dashboard, online users, moderation, geography, businesses, business events, offers, challenges, audit.
 
@@ -89,12 +91,12 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 
 ## Deployment Status
 
-- Local Docker Compose runs API, admin, consumer web, and business portal.
+- Local Docker Compose runs API, marketing site, admin, consumer web, and business portal.
 - API is containerized with `backend/ThirdWheel.API/Dockerfile`.
 - Consumer web uses standalone Next output and Docker.
 - Business portal uses standalone Next output and Docker through service `triad-business`.
 - Admin Next.js static export is hosted by `Admin.Host` in Docker.
-- Vercel scripts deploy `web/triad-web`, `web/triad-business`, and `admin/nextjs-admin`; backend deploy script builds/pushes an OCI image and can run a release hook.
+- Vercel scripts deploy `web/triad-web`, `web/triad-business`, and `admin/nextjs-admin`; backend and marketing site deploy scripts build/push OCI images and can run release hooks.
 
 ## Known Gaps And Assumptions
 
