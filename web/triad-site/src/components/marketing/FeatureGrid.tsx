@@ -4,7 +4,11 @@ import { motion } from "framer-motion";
 import { BadgeCheck, CalendarDays, Gift, HeartHandshake, Shield, WandSparkles } from "lucide-react";
 
 import { FeatureCard } from "@/components/marketing/FeatureCard";
-import { motionViewport, slideUp, staggerContainer } from "@/lib/animations";
+import {
+  motionViewport,
+  revealUp,
+  staggerRevealContainer,
+} from "@/lib/animations";
 
 const features = [
   {
@@ -47,12 +51,20 @@ const features = [
 
 export function FeatureGrid() {
   return (
-    <section className="py-20" id="features">
+    <section className="relative py-20" id="features">
+      <div
+        aria-hidden="true"
+        className="gradient-blob anim-drift-blob -z-10 left-[10%] top-[8%] h-[20rem] w-[20rem] bg-[radial-gradient(circle,rgba(124,77,255,0.18),transparent_70%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="gradient-blob anim-drift-blob -z-10 right-[6%] bottom-[10%] h-[22rem] w-[22rem] bg-[radial-gradient(circle,rgba(219,38,119,0.16),transparent_70%)]"
+      />
       <div className="site-shell">
         <motion.div
           className="mx-auto max-w-3xl text-center"
           initial="hidden"
-          variants={slideUp}
+          variants={revealUp}
           viewport={motionViewport}
           whileInView="visible"
         >
@@ -68,7 +80,7 @@ export function FeatureGrid() {
         <motion.div
           className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           initial="hidden"
-          variants={staggerContainer}
+          variants={staggerRevealContainer}
           viewport={motionViewport}
           whileInView="visible"
         >

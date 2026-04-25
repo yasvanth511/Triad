@@ -3,7 +3,13 @@
 import { motion } from "framer-motion";
 import { EyeOff, Flag, LockKeyhole, ShieldCheck, UserCheck, UserX } from "lucide-react";
 
-import { motionViewport, slideUp, staggerContainer, staggerItem } from "@/lib/animations";
+import { TiltCard } from "@/components/marketing/TiltCard";
+import {
+  motionViewport,
+  revealLeft,
+  staggerRevealContainer,
+  staggerRevealItem,
+} from "@/lib/animations";
 
 const safetyItems = [
   { title: "Verification", icon: UserCheck },
@@ -16,11 +22,15 @@ const safetyItems = [
 
 export function SafetySection() {
   return (
-    <section className="py-20" id="safety">
+    <section className="relative py-20" id="safety">
+      <div
+        aria-hidden="true"
+        className="gradient-blob anim-drift-blob -z-10 right-[8%] top-[10%] h-[20rem] w-[20rem] bg-[radial-gradient(circle,rgba(124,77,255,0.18),transparent_70%)]"
+      />
       <div className="site-shell grid gap-10 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
         <motion.div
           initial="hidden"
-          variants={slideUp}
+          variants={revealLeft}
           viewport={motionViewport}
           whileInView="visible"
         >
@@ -37,7 +47,7 @@ export function SafetySection() {
         <motion.div
           className="grid gap-4 sm:grid-cols-2"
           initial="hidden"
-          variants={staggerContainer}
+          variants={staggerRevealContainer}
           viewport={motionViewport}
           whileInView="visible"
         >
@@ -45,15 +55,23 @@ export function SafetySection() {
             const Icon = item.icon;
 
             return (
-              <motion.div
-                className="premium-panel rounded-[24px] p-5"
-                key={item.title}
-                variants={staggerItem}
-              >
-                <span className="grid size-10 place-items-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,77,255,0.14),rgba(219,38,119,0.12))]">
-                  <Icon className="size-5 text-[var(--color-accent)]" aria-hidden="true" />
-                </span>
-                <h3 className="mt-5 text-lg font-semibold text-[var(--color-ink)]">{item.title}</h3>
+              <motion.div key={item.title} variants={staggerRevealItem}>
+                <TiltCard className="group h-full" innerClassName="rounded-[24px]" intensity={5}>
+                  <div className="glass-panel edge-highlight sheen relative h-full rounded-[24px] p-5 transition-shadow duration-300 group-hover:shadow-[0_30px_60px_-22px_rgba(52,28,90,0.32)]">
+                    <span
+                      className="grid size-10 place-items-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,77,255,0.18),rgba(219,38,119,0.16))]"
+                      style={{ transform: "translateZ(18px)" }}
+                    >
+                      <Icon className="size-5 text-[var(--color-accent)]" aria-hidden="true" />
+                    </span>
+                    <h3
+                      className="mt-5 text-lg font-semibold text-[var(--color-ink)]"
+                      style={{ transform: "translateZ(12px)" }}
+                    >
+                      {item.title}
+                    </h3>
+                  </div>
+                </TiltCard>
               </motion.div>
             );
           })}
