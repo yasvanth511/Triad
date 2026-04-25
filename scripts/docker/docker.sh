@@ -260,7 +260,7 @@ compose_up() {
   fi
   export_runtime_env
   log "Starting compose service $SERVICE"
-  compose_cmd up -d --build "$SERVICE"
+  compose_cmd up -d --build --remove-orphans "$SERVICE"
 }
 
 compose_down() {

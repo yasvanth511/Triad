@@ -7,7 +7,9 @@
       "Bash(npx tsc *)",
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(npm install *)",
-      "Bash(npx skills *)"
+      "Bash(npx skills *)",
+      "Bash(bash scripts/docker/docker.sh down)",
+      "Bash(bash redeploy.sh --backend)"
     ]
   }
 }
