@@ -1,0 +1,11 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Compose drives the visual theme. The XML theme just sets a clean
+         transparent system background and matches the navigation bar color. -->
+    <style name="Theme.Triad" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+        <item name="android:windowBackground">@color/triad_window_background</item>
+    </style>
+</resources>
