@@ -6,6 +6,7 @@ Use this map before reading source. It lists the files most likely to matter for
 
 - `backend/ThirdWheel.API/`: ASP.NET Core API, EF models, controllers, services, migrations, Dockerfile.
 - `IOSNative/ThirdWheelNative/`: SwiftUI iOS app source.
+- `android/`: Kotlin + Jetpack Compose Android app source, Gradle wrapper, app module under `android/app/`.
 - `web/triad-web/`: consumer Next.js app.
 - `web/triad-site/`: public marketing Next.js website.
 - `web/triad-business/`: business partner Next.js app and Dockerfile.
@@ -30,12 +31,14 @@ Use this map before reading source. It lists the files most likely to matter for
 - `backend/ThirdWheel.API/Controllers/*.cs`: route surface.
 - `web/*/src/lib/api/*.ts` and `web/*/src/lib/types.ts`: web contract mirrors.
 - `IOSNative/ThirdWheelNative/APIClient.swift` and `Models.swift`: iOS contract mirrors.
+- `android/app/src/main/java/com/triad/app/core/network/ApiClient.kt`, `data/Models.kt`, and `data/Requests.kt`: Android contract mirrors. The full iOS → Android map is `docs/android/ios-parity-map.md`.
 
 ## Safe To Edit Often
 
 - Feature-specific backend service/controller/DTO/model/test files for the requested change.
 - Feature-specific web files under `src/features`, `src/components`, `src/app`, `src/lib/api`, and `src/lib/types.ts`.
 - Feature-specific iOS Swift files under `IOSNative/ThirdWheelNative`.
+- Feature-specific Android Kotlin files under `android/app/src/main/java/com/triad/app/`.
 - Backend tests under `tests/ThirdWheel.API.UnitTests` and `tests/ThirdWheel.API.IntegrationTests`.
 - AI docs under `docs/ai/` when durable context changes.
 
@@ -47,12 +50,13 @@ Use this map before reading source. It lists the files most likely to matter for
 - `backend/ThirdWheel.API/appsettings*.json`.
 - `docker-compose.yml`, Dockerfiles, `scripts/deploy/*`, `scripts/common/*`.
 - `IOSNative/ThirdWheelNative.xcodeproj/project.pbxproj`.
+- `android/build.gradle.kts`, `android/settings.gradle.kts`, `android/app/build.gradle.kts`, `android/gradle/libs.versions.toml`, and the Gradle wrapper at `android/gradle/wrapper/`.
 - `package.json`, `package-lock.json`, `.csproj`, `NuGet.Config`.
 - `admin/app.js`, `admin/index.html`, `admin/styles.css` because they may be legacy.
 
 ## Generated Or Build Files
 
-- Do not manually edit `.next/`, `bin/`, `obj/`, `DerivedData/`, `.vercel/`, `uploads/`, or local `.dotnet/` sentinel files.
+- Do not manually edit `.next/`, `bin/`, `obj/`, `DerivedData/`, `.vercel/`, `uploads/`, `android/.gradle/`, `android/app/build/`, `android/build/`, `dist/android/`, or local `.dotnet/` sentinel files.
 - Some generated files may appear tracked in this repo; avoid touching them unless the task is explicit cleanup.
 
 ## Secrets And Config To Avoid
@@ -81,7 +85,8 @@ Use this map before reading source. It lists the files most likely to matter for
 - Backend test runner: `scripts/run/test-backend.sh`.
 - Docker helper: `scripts/docker.sh` and `scripts/docker/docker.sh`.
 - iOS run helper: `scripts/mobile/run-ios.sh`.
-- Quick local build/deploy: `scripts/run/quick-build-deploy.sh`.
+- Android run helper: `scripts/mobile/run-android.sh`.
+- Quick local build/deploy: `scripts/run/quick-build-deploy.sh` (supports `--ios` and `--android` alongside the web/admin/business/site/backend flags).
 - Seed demo data: `seed.ps1`.
 
 ## Deployment Locations
@@ -93,4 +98,5 @@ Use this map before reading source. It lists the files most likely to matter for
 - Business portal container: `web/triad-business/Dockerfile`.
 - Admin container: `admin/Dockerfile`.
 - Vercel deploy: `scripts/deploy/web-app.sh`, `scripts/deploy/business-app.sh`, `scripts/deploy/admin-app.sh`.
-- Full deploy coordinator: `scripts/deploy/deploy.sh`.
+- Android deploy (debug or release APK + AAB, plus optional release hook): `scripts/deploy/android-app.sh`.
+- Full deploy coordinator: `scripts/deploy/deploy.sh` (supports `--android` and `--all`).

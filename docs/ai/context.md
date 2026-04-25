@@ -6,12 +6,13 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 
 - ASP.NET Core 10 backend API in `backend/ThirdWheel.API`.
 - Native SwiftUI iOS app in `IOSNative/ThirdWheelNative`.
+- Native Android app in `android/` (Kotlin + Jetpack Compose). Full feature parity with iOS — see `docs/android/ios-parity-map.md`.
 - Consumer Next.js web app in `web/triad-web`.
 - Public marketing Next.js website in `web/triad-site`.
 - Business partner Next.js portal in `web/triad-business`.
 - Admin dashboard in `admin/nextjs-admin` with `admin/Admin.Host` for static hosting and API proxying.
 - Backend unit/integration tests in `tests/`.
-- Docker, local setup, iOS, seed, and deployment scripts in `scripts/` plus `seed.ps1`.
+- Docker, local setup, iOS, Android, seed, and deployment scripts in `scripts/` plus `seed.ps1`. Mobile entrypoints: `scripts/mobile/run-ios.sh`, `scripts/mobile/run-android.sh`. Android cloud build: `scripts/deploy/android-app.sh`.
 
 ## What Works
 
@@ -88,6 +89,9 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 - iOS app includes auth, root/session gate, discover, saved profiles, matches/chat, Impress Me inbox/respond/review, events, profile detail, and profile editing.
 - Key iOS support files: `APIClient.swift`, `AppConfig.swift`, `SessionStore.swift`, `KeychainTokenStore.swift`, `LocationPermissionManager.swift`, `BrandStyle.swift`, `Models.swift`.
 - Simulator defaults to `http://localhost:5127`; physical devices use `APIBaseURL` in `Info.plist`.
+- Android app at `android/` ships the same screens (Auth, Root/MainScaffold, Discover, Saved, Matches, MatchChat, Impress Me inbox/respond/review, Events with nearby+all-events fallback, Notifications, Profile, ProfileDetail, ProfileEdit, CoupleLinkCard, ReportProfileSheet, VerificationVendorSheet).
+- Key Android support files: `core/AppConfig.kt`, `core/network/ApiClient.kt`, `core/storage/TokenStore.kt`, `core/location/LocationPermissionState.kt`, `session/SessionStore.kt`, `ui/theme/BrandStyle.kt`, `data/Models.kt`, `data/Requests.kt`.
+- Android emulator defaults to `http://10.0.2.2:5127` (host alias); override via `-Ptriad.apiBaseUrl=` Gradle property at build time. Backend URL is baked into `BuildConfig.API_BASE_URL` when the APK is built.
 
 ## Deployment Status
 
@@ -97,6 +101,7 @@ Current as of 2026-04-24. This file is a compact current-state map for future AI
 - Business portal uses standalone Next output and Docker through service `triad-business`.
 - Admin Next.js static export is hosted by `Admin.Host` in Docker.
 - Vercel scripts deploy `web/triad-web`, `web/triad-business`, and `admin/nextjs-admin`; backend and marketing site deploy scripts build/push OCI images and can run release hooks.
+- Android artifacts are produced by `scripts/deploy/android-app.sh` (debug or release, APK and/or AAB, optional `ANDROID_RELEASE_COMMAND` for Play upload / Firebase App Distribution). The script does not push anywhere on its own.
 
 ## Known Gaps And Assumptions
 

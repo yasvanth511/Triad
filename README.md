@@ -1,6 +1,6 @@
 # Triad
 
-Triad is a dating and social discovery product built around singles, couples, and group-aware interactions. This repo currently contains the backend API, the native iOS client, a public marketing website, a lightweight admin dashboard for moderation and analytics, and a business partner portal.
+Triad is a dating and social discovery product built around singles, couples, and group-aware interactions. This repo currently contains the backend API, native iOS and Android clients, a public marketing website, a lightweight admin dashboard for moderation and analytics, and a business partner portal.
 
 The product name is `Triad`, while parts of the codebase still use the older `ThirdWheel` namespace and app names. When you see `ThirdWheel.API` or `ThirdWheelNative`, they are part of the same product.
 
@@ -9,31 +9,37 @@ The product name is `Triad`, while parts of the codebase still use the older `Th
 The active surfaces in this repository are:
 
 - `backend/ThirdWheel.API`: ASP.NET Core 10 API with PostgreSQL, JWT auth, SignalR chat, local media storage, rate limiting, and OpenTelemetry
-- `IOSNative/ThirdWheelNative`: native SwiftUI iOS app used as the primary client in this repo
+- `IOSNative/ThirdWheelNative`: native SwiftUI iOS app
+- `android/`: native Android app (Kotlin + Jetpack Compose) at full feature parity with the iOS client; see [`docs/android/ios-parity-map.md`](docs/android/ios-parity-map.md)
 - `admin/`: Next.js admin dashboard shell for user, moderation, geography, and business review views backed by `/api/admin/*`
 - `web/triad-site`: public marketing website for brand, feature, safety, download, and partner CTAs
-- `web/triad-web`: consumer-facing Next.js web app that mirrors the iOS product flows for desktop, tablet, and mobile web
+- `web/triad-web`: consumer-facing Next.js web app that mirrors the native product flows for desktop, tablet, and mobile web
 - `web/triad-business`: business partner portal for onboarding, event/offer/challenge management, analytics, and settings
 
-The backend is the source of truth for product behavior. The iOS app is the main end-user client here today.
+The backend is the source of truth for product behavior. iOS and Android are the production end-user clients.
 
 ## Repo Layout
 
 ```text
 Triad/
 ├── admin/                         # Static admin dashboard shell
+├── android/                       # Native Android app (Kotlin + Compose)
 ├── backend/ThirdWheel.API/        # ASP.NET Core API
 ├── IOSNative/                     # Native SwiftUI app + Xcode project
 ├── web/triad-business/            # Business partner Next.js portal
+├── web/triad-site/                # Public marketing website
 ├── web/triad-web/                 # Consumer Next.js web app
 ├── scripts/
 │   ├── common/                    # Shared shell helpers
 │   ├── docker/docker.sh           # Docker helper commands
-│   ├── mobile/run-ios.sh          # Build API + simulator app
+│   ├── mobile/run-ios.sh          # Build API + iOS simulator app
+│   ├── mobile/run-android.sh      # Build API + Android emulator app
+│   ├── deploy/                    # Container, Vercel, and Android deploys
 │   ├── run/test-backend.sh        # Backend test runner
 │   └── setup/check-system.sh      # Local prerequisite check
 ├── tests/                         # Unit + integration tests
 ├── docker-compose.yml             # Local API container
+├── docs/android/                  # Android parity + deploy notes
 ├── Product.md                     # Product overview and positioning
 └── seed.ps1                       # Demo data seeding
 ```
@@ -173,6 +179,38 @@ SIMULATOR_UDID="YOUR-SIM-UDID" ./scripts/mobile/run-ios.sh
 API_PORT=5127 ./scripts/mobile/run-ios.sh
 ```
 
+### 9. Run The Native Android App
+
+```bash
+./scripts/mobile/run-android.sh
+```
+
+That script:
+
+1. resolves `ANDROID_HOME` and `JAVA_HOME` (defaulting to the JDK that ships with Android Studio)
+2. rebuilds and redeploys the Docker API
+3. waits for `http://localhost:5127/health`
+4. picks up the first online emulator/device or boots the named AVD (default `Pixel_7`)
+5. runs `:app:installDebug` with `-Ptriad.apiBaseUrl=$TRIAD_API_BASE_URL`
+6. launches `com.triad.app/.MainActivity`
+
+Useful overrides:
+
+```bash
+ANDROID_AVD="Pixel_8_Pro" ./scripts/mobile/run-android.sh
+ANDROID_SERIAL="emulator-5554" ./scripts/mobile/run-android.sh
+TRIAD_API_BASE_URL="http://192.168.1.50:5127" ./scripts/mobile/run-android.sh
+SKIP_API_DEPLOY=1 ./scripts/mobile/run-android.sh
+```
+
+The default API base URL is `http://10.0.2.2:5127` (the emulator's alias for the
+host machine). Use `TRIAD_API_BASE_URL` for physical devices on the same LAN.
+
+First-time setup: open `android/` in Android Studio Koala+ once so it generates
+the Gradle wrapper, or run `gradle wrapper --gradle-version 8.10.2` from inside
+`android/`. After that the wrapper is checked in and `./gradlew` works on its
+own. Detailed Android docs live in [`android/README.md`](android/README.md).
+
 ## Day-To-Day Workflows
 
 ### Backend Tests
@@ -211,10 +249,11 @@ The test runner uses local `dotnet` when available and falls back to Docker with
 ./scripts/run/quick-build-deploy.sh --site
 ./scripts/run/quick-build-deploy.sh --web
 ./scripts/run/quick-build-deploy.sh --business
+./scripts/run/quick-build-deploy.sh --android
 ./redeploy.sh
 ```
 
-`redeploy.sh` defaults to the Docker-backed backend + marketing site + admin + web + business stack plus the iOS simulator flow.
+`redeploy.sh` defaults to the Docker-backed backend + marketing site + admin + web + business stack plus the iOS simulator and Android emulator flows. On Windows, `redeploy.ps1 android` invokes `./gradlew :app:installDebug` against the connected emulator/device — Docker is not used.
 
 ## Cloud Deployment
 
@@ -225,7 +264,8 @@ This repo now includes deploy scripts for the active deployable surfaces:
 - `./scripts/deploy/web-app.sh`: deploys `web/triad-web` to Vercel
 - `./scripts/deploy/admin-app.sh`: deploys `admin/nextjs-admin` to Vercel and generates the `/api/*` rewrite needed by the static export
 - `./scripts/deploy/business-app.sh`: deploys `web/triad-business` to Vercel
-- `./scripts/deploy/deploy.sh`: runs the full sequence for backend + marketing site + web + admin + business
+- `./scripts/deploy/android-app.sh`: builds the signed Android APK and Play AAB, drops them under `dist/android/`, and can run a release hook (Play upload, Firebase App Distribution, etc.)
+- `./scripts/deploy/deploy.sh`: runs the full sequence for backend + marketing site + web + admin + business; pass `--android` (or `--all`) to also build the Android artifacts
 
 Start from the example env file:
 
@@ -241,7 +281,7 @@ source .env.deploy
 set +a
 ```
 
-Production deploy:
+Production deploy (everything including a signed Android release build):
 
 ```bash
 ./scripts/deploy/deploy.sh --all --prod
@@ -253,11 +293,26 @@ Preview deploy for the Vercel apps and marketing site image:
 ./scripts/deploy/deploy.sh --site --web --admin --business --preview
 ```
 
+Just the Android artifacts:
+
+```bash
+./scripts/deploy/deploy.sh --android --prod   # signed release APK + AAB
+./scripts/deploy/deploy.sh --android --preview # debug build for sideloading / QA
+```
+
+Or call the script directly with finer control:
+
+```bash
+./scripts/deploy/android-app.sh --release --bundle-only --api-base https://api.example.com
+```
+
 Notes:
 
 - The backend API and public marketing site are deployed as containers in this setup. The consumer web, admin, and business apps still use the Vercel scripts unless you explicitly change them.
+- The Android script produces local artifacts in `dist/android/` and never pushes anywhere on its own. Wire `ANDROID_RELEASE_COMMAND` (e.g. `fastlane supply --aab "$TRIAD_ANDROID_AAB" --track internal`) to actually publish.
+- For a signed release Android build set `ANDROID_KEYSTORE`, `ANDROID_KEY_ALIAS`, `ANDROID_KEYSTORE_PASSWORD`, and (optionally) `ANDROID_KEY_PASSWORD` in `.env.deploy`. Without those, the script will warn and Gradle may produce only an unsigned `app-release-unsigned.apk`.
 - If `web/triad-web`, `admin/nextjs-admin`, or `web/triad-business` are not linked to Vercel yet, set `TRIAD_WEB_VERCEL_PROJECT`, `TRIAD_ADMIN_VERCEL_PROJECT`, `TRIAD_BUSINESS_VERCEL_PROJECT`, and optionally `TRIAD_VERCEL_SCOPE`. The scripts will run `vercel link --yes` for you.
-- `BACKEND_RELEASE_COMMAND` is intentionally provider-agnostic. Use it to trigger your host-specific rollout after the image push succeeds.
+- `BACKEND_RELEASE_COMMAND` is intentionally provider-agnostic. Use it to trigger your host-specific rollout after the image push succeeds. `ANDROID_RELEASE_COMMAND` follows the same pattern.
 
 ### Native iOS Build Only
 
@@ -276,6 +331,31 @@ Then install and launch:
 ```bash
 xcrun simctl install booted /tmp/Triad/ios-build/Build/Products/Debug-iphonesimulator/ThirdWheelNative.app
 xcrun simctl launch booted com.thirdwheel.iosnative
+```
+
+### Native Android Build Only
+
+```bash
+cd android
+./gradlew :app:assembleDebug -Ptriad.apiBaseUrl=http://10.0.2.2:5127
+```
+
+Install on a running emulator/device:
+
+```bash
+./gradlew :app:installDebug
+adb shell am start -n com.triad.app/.MainActivity
+```
+
+Release build (signed) and Play AAB:
+
+```bash
+./gradlew :app:assembleRelease :app:bundleRelease \
+  -Ptriad.apiBaseUrl=https://api.example.com \
+  -Ptriad.signing.storeFile="$HOME/keys/triad.jks" \
+  -Ptriad.signing.storePassword="$ANDROID_KEYSTORE_PASSWORD" \
+  -Ptriad.signing.keyAlias="$ANDROID_KEY_ALIAS" \
+  -Ptriad.signing.keyPassword="$ANDROID_KEY_PASSWORD"
 ```
 
 ### Demo Data
@@ -348,6 +428,24 @@ Key app files:
 | `ImpressMeView.swift` | inbox and action flow |
 | `EventsView.swift` | event browsing |
 | `ProfileView.swift` | profile display and editing |
+
+### Native Android
+
+The Kotlin + Jetpack Compose app at `android/` ships at full feature parity
+with the iOS client (auth, discover, saved, matches, chat, Impress Me,
+events, profile / detail / edit, couple link, verifications, safety, and the
+brand styling). The full iOS → Android mapping lives in
+[`docs/android/ios-parity-map.md`](docs/android/ios-parity-map.md).
+
+| Path | Purpose |
+|---|---|
+| `android/app/build.gradle.kts` | module config — `BuildConfig.API_BASE_URL` is sourced from `-Ptriad.apiBaseUrl` |
+| `app/src/main/java/com/triad/app/TriadApplication.kt` | DI graph (AppConfig, ApiClient, SessionStore, TokenStore) |
+| `app/src/main/java/com/triad/app/core/network/ApiClient.kt` | OkHttp + kotlinx.serialization HTTP client |
+| `app/src/main/java/com/triad/app/session/SessionStore.kt` | mirror of iOS `SessionStore` — every session API call lives here |
+| `app/src/main/java/com/triad/app/ui/` | Compose screens grouped by feature |
+| `app/src/main/java/com/triad/app/ui/theme/BrandStyle.kt` | brand palette, gradients, `Modifier.triadCard()` |
+| `android/README.md` | Android setup, configuration, run, and release notes |
 
 ### Admin Surface
 
@@ -482,12 +580,17 @@ Important environment values:
 | `Verification__Methods__<key>__Enabled` | toggle individual verification methods |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP exporter endpoint |
 | `APIBaseURL` in iOS `Info.plist` | physical-device backend URL override |
+| `triad.apiBaseUrl` Gradle property | Android backend URL (baked into `BuildConfig.API_BASE_URL`) |
+| `ANDROID_KEYSTORE` (+ `ANDROID_KEY_ALIAS`, passwords) | signing inputs for `android-app.sh` release builds |
 
 Local defaults used by the repo workflow:
 
 - API port: `5127`
 - iOS bundle id: `com.thirdwheel.iosnative`
-- default simulator target: `iPhone 17`
+- iOS default simulator target: `iPhone 17`
+- Android application id: `com.triad.app`
+- Android default emulator target: `Pixel_7`
+- Android default API base URL: `http://10.0.2.2:5127` (the emulator host alias)
 
 ## Runtime Behavior And Limits
 

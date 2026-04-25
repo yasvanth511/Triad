@@ -10,11 +10,12 @@ RUN_ADMIN=0
 RUN_WEB=0
 RUN_BUSINESS=0
 RUN_IOS=0
+RUN_ANDROID=0
 EXPLICIT_SELECTION=0
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/run/quick-build-deploy.sh [--backend] [--site] [--admin|--ui] [--web] [--business] [--ios] [--all] [--help]
+Usage: ./scripts/run/quick-build-deploy.sh [--backend] [--site] [--admin|--ui] [--web] [--business] [--ios] [--android] [--all] [--help]
 EOF
 }
 
@@ -56,6 +57,15 @@ run_ios() {
   fi
 }
 
+run_android() {
+  log_layer "android"
+  if [[ "$RUN_BACKEND" == "1" ]]; then
+    SKIP_API_DEPLOY=1 "$ROOT_DIR/scripts/mobile/run-android.sh"
+  else
+    "$ROOT_DIR/scripts/mobile/run-android.sh"
+  fi
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --backend)
@@ -86,6 +96,10 @@ while [[ $# -gt 0 ]]; do
       RUN_IOS=1
       EXPLICIT_SELECTION=1
       ;;
+    --android)
+      RUN_ANDROID=1
+      EXPLICIT_SELECTION=1
+      ;;
     --all)
       RUN_BACKEND=1
       RUN_SITE=1
@@ -93,6 +107,7 @@ while [[ $# -gt 0 ]]; do
       RUN_WEB=1
       RUN_BUSINESS=1
       RUN_IOS=1
+      RUN_ANDROID=1
       EXPLICIT_SELECTION=1
       ;;
     --help|-h)
@@ -115,6 +130,7 @@ if [[ "$EXPLICIT_SELECTION" == "0" ]]; then
   RUN_WEB=1
   RUN_BUSINESS=1
   RUN_IOS=1
+  RUN_ANDROID=1
 fi
 
 if [[ "$RUN_BACKEND" == "1" ]]; then
@@ -139,4 +155,8 @@ fi
 
 if [[ "$RUN_IOS" == "1" ]]; then
   run_ios
+fi
+
+if [[ "$RUN_ANDROID" == "1" ]]; then
+  run_android
 fi

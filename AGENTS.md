@@ -13,7 +13,8 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 ## Architecture Summary
 
 - `backend/ThirdWheel.API` is an ASP.NET Core 10 API using EF Core 10, PostgreSQL, JWT auth, SignalR, rate limiting, local uploads, OpenTelemetry, and Swagger/OpenAPI in development.
-- `IOSNative/ThirdWheelNative` is the native SwiftUI iOS client and currently the primary consumer client.
+- `IOSNative/ThirdWheelNative` is the native SwiftUI iOS client.
+- `android/` is the native Android client (Kotlin + Jetpack Compose) at full feature parity with the iOS client. See `docs/android/ios-parity-map.md`.
 - `web/triad-web` is a responsive Next.js 16/React 19 consumer web client with route parity but some native-only media/realtime flows still incomplete.
 - `web/triad-business` is a Next.js 16/React 19 business partner portal for onboarding, events, offers, challenges, analytics, and settings.
 - `admin/nextjs-admin` plus `admin/Admin.Host` provide the active admin surface; root-level `admin/index.html`, `app.js`, and `styles.css` are older static admin files and need verification before use.
@@ -22,6 +23,7 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 
 - API: `backend/ThirdWheel.API`, canonical contracts in `DTOs/`, entities in `Models/`, business logic in `Services/`, persistence in `Data/AppDbContext.cs`.
 - iOS app: `IOSNative/ThirdWheelNative`, SwiftUI screens, `APIClient`, `SessionStore`, Keychain token storage, location permissions, app styling.
+- Android app: `android/`, Kotlin + Jetpack Compose, `core/network/ApiClient`, `session/SessionStore`, EncryptedSharedPreferences token storage, accompanist-permissions location flow, `ui/theme/BrandStyle`. The iOS → Android parity table lives in `docs/android/ios-parity-map.md`.
 - Consumer web: `web/triad-web`, App Router pages, feature screens, shared UI primitives, API client wrappers, PWA metadata.
 - Business portal: `web/triad-business`, App Router auth/portal routes, React Query, API service wrappers.
 - Admin: `admin/nextjs-admin` static export and `admin/Admin.Host` proxy/static host for `/api/*`.
@@ -58,7 +60,10 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - Admin Next.js local: `cd admin/nextjs-admin && npm install && npm run dev`
 - Admin build/export: `cd admin/nextjs-admin && npm run build`
 - iOS simulator flow: `./scripts/mobile/run-ios.sh`
-- Deploy helpers: `./scripts/deploy/deploy.sh --all --prod`, `./scripts/deploy/deploy.sh --web --admin --business --preview`
+- Android emulator flow: `./scripts/mobile/run-android.sh`
+- Android debug build (no install): `cd android && ./gradlew :app:assembleDebug -Ptriad.apiBaseUrl=http://10.0.2.2:5127`
+- Android release artifacts: `./scripts/deploy/android-app.sh --release` (needs `ANDROID_KEYSTORE`, `ANDROID_KEY_ALIAS`, passwords)
+- Deploy helpers: `./scripts/deploy/deploy.sh --all --prod`, `./scripts/deploy/deploy.sh --web --admin --business --preview`, `./scripts/deploy/deploy.sh --android --prod`
 - Seed demo data: `pwsh -File seed.ps1` after confirming target API and destructive seed behavior.
 
 ## Coding Standards
@@ -67,8 +72,9 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - Backend controllers should stay thin; business logic belongs in services and shared limits in `AppConstants.cs`.
 - Preserve API contracts unless the task explicitly asks for a contract change; update all clients and tests when contracts change.
 - Keep web API calls in `src/lib/api/client.ts` and `src/lib/api/services.ts`; keep mirrored types in `src/lib/types.ts`.
-- Reuse existing UI primitives, providers, feature folders, `BrandStyle.swift`, `APIClient`, and `SessionStore`.
-- Do not rename `ThirdWheel` namespaces, app IDs, routes, or EF migration history just to match Triad branding.
+- Reuse existing UI primitives, providers, feature folders, `BrandStyle.swift`, `APIClient`, and `SessionStore`. The Android equivalents are `BrandStyle.kt`, `ApiClient.kt`, and `SessionStore.kt` under `android/app/src/main/java/com/triad/app/`.
+- The Android app keeps the same package id (`com.triad.app`) and the same JSON contracts as iOS. Do not change one client's contract without mirroring it on the other and updating `docs/android/ios-parity-map.md`.
+- Do not rename `ThirdWheel` namespaces, app IDs, routes, or EF migration history just to match Triad branding. The Android app intentionally uses `com.triad.app` instead.
 
 ## Triad Marketing Website Rules
 
@@ -92,6 +98,7 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - API workflow or contract changes usually need integration tests in `tests/ThirdWheel.API.IntegrationTests`.
 - Web changes should run `npm run lint`, `npm run typecheck`, and, for route/build changes, `npm run build` in the touched app.
 - iOS changes should use `./scripts/mobile/run-ios.sh` or the README `xcodebuild` command when practical.
+- Android changes should run at minimum `cd android && ./gradlew :app:assembleDebug` and ideally `./scripts/mobile/run-android.sh` against an emulator. The Android module has no test suite yet — say so explicitly when leaving an Android change unverified.
 - If a check cannot be run, report why and name the residual risk.
 
 ## Database And Seed Rules
@@ -131,7 +138,8 @@ Tool-neutral instructions for AI coding agents working in this repository. `AGEN
 - `.env*`, `.env.docker`, `.env.deploy`, deployment credentials, signing profiles, certificates, and local machine config.
 - `backend/ThirdWheel.API/Migrations/*` and `AppDbContextModelSnapshot.cs` outside schema tasks.
 - `package-lock.json`, future lock files, package manager config, `NuGet.Config`, and project files outside dependency/tooling tasks.
-- Generated/build outputs: `.next/`, `bin/`, `obj/`, `DerivedData/`, `uploads/`, `.vercel/`, `.dotnet/` sentinel files.
+- `android/gradle/libs.versions.toml`, `android/gradle/wrapper/gradle-wrapper.jar`, `android/gradlew`/`gradlew.bat`, and `android/gradle.properties` outside dependency/tooling tasks.
+- Generated/build outputs: `.next/`, `bin/`, `obj/`, `DerivedData/`, `uploads/`, `.vercel/`, `.dotnet/` sentinel files, `android/.gradle/`, `android/app/build/`, `android/build/`, `dist/android/`.
 - `docker-compose.yml`, Dockerfiles, deploy scripts, and CI/deployment config outside deployment tasks.
 - `.claude/settings.local.json`; it is local Claude permissions, not shared project guidance.
 
