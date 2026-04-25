@@ -37,13 +37,13 @@ export function AppShell({ children }: PropsWithChildren) {
   const { currentUser } = useSession();
 
   return (
-    <div className="pb-24 md:pb-10">
+    <div style={{ paddingBottom: "var(--bottom-nav-clearance)" }}>
       <div className="screen-wrap grid gap-6 py-5 lg:grid-cols-[268px_minmax(0,1fr)] lg:py-8">
         <aside className="glass-panel sticky top-6 hidden self-start rounded-[30px] p-5 lg:block">
           <div className="space-y-6">
             <div className="space-y-2">
-              <LogoWordmark />
-              <p className="text-sm leading-6 text-[var(--color-muted-ink)]">
+              <LogoWordmark className="block" />
+              <p className="text-sm leading-6 text-[var(--color-muted-ink)] break-words">
                 Couple-aware discovery, softer intent, and the same Triad feel adapted for web.
               </p>
             </div>
@@ -76,12 +76,16 @@ export function AppShell({ children }: PropsWithChildren) {
 
             <div className="rounded-[24px] bg-[linear-gradient(135deg,rgba(124,77,255,0.10),rgba(219,38,119,0.10))] p-4">
               <div className="flex items-center gap-3">
-                <Avatar src={currentUser?.photos[0]?.url} alt={currentUser?.username || "You"} />
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink)]">
+                <Avatar
+                  src={currentUser?.photos[0]?.url}
+                  alt={currentUser?.username || "You"}
+                  className="shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[var(--color-ink)]">
                     {currentUser?.username || "Signed in"}
                   </p>
-                  <p className="text-xs text-[var(--color-muted-ink)]">
+                  <p className="truncate text-xs text-[var(--color-muted-ink)]">
                     {currentUser?.isCouple ? "Couple profile" : "Single profile"}
                   </p>
                 </div>
@@ -90,7 +94,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </div>
         </aside>
 
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <header className="glass-panel flex items-center justify-between rounded-[26px] px-5 py-4 lg:hidden">
             <div className="flex items-center gap-3">
               <LayoutGrid className="size-5 text-[var(--color-accent)]" />
@@ -105,7 +109,10 @@ export function AppShell({ children }: PropsWithChildren) {
         </div>
       </div>
 
-      <nav className="glass-panel fixed inset-x-4 bottom-4 z-40 flex items-center justify-around rounded-[28px] px-2 py-2 lg:hidden">
+      <nav
+        className="glass-panel fixed inset-x-4 z-40 flex items-center justify-around rounded-[28px] px-2 py-2 lg:hidden"
+        style={{ bottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         {primaryNav.map((item) => (
           <MobileNavLink
             key={item.href}

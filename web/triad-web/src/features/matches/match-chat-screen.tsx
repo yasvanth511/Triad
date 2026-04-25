@@ -1,9 +1,9 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { HeartHandshake, Send } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Avatar } from "@/components/ui/avatar";
@@ -12,12 +12,14 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { useSession } from "@/components/providers/session-provider";
-import { getMatches, getMessages, sendImpressMe, sendMessage } from "@/lib/api/services";
+import { getMatches, getMessages, getNotifications, markNotificationRead, sendImpressMe, sendMessage } from "@/lib/api/services";
 import { formatRelativeDate } from "@/lib/utils";
 
 export function MatchChatScreen({ matchId }: { matchId: string }) {
   const { token, currentUser } = useSession();
   const [draft, setDraft] = useState("");
+  const queryClient = useQueryClient();
+  const hasMarkedRef = useRef(false);
 
   const matchesQuery = useQuery({
     queryKey: ["matches", token],
@@ -30,6 +32,29 @@ export function MatchChatScreen({ matchId }: { matchId: string }) {
     queryFn: () => getMessages(token!, matchId),
     enabled: Boolean(token),
   });
+
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications", token],
+    queryFn: () => getNotifications(token!),
+    enabled: Boolean(token),
+    staleTime: 15_000,
+  });
+
+  useEffect(() => {
+    if (!messagesQuery.isSuccess || !notificationsQuery.data || !token || hasMarkedRef.current) return;
+
+    const toMark = notificationsQuery.data.notifications.filter(
+      (n) => n.type === "MessageReceived" && n.referenceId === matchId && !n.isRead,
+    );
+
+    hasMarkedRef.current = true;
+
+    if (toMark.length === 0) return;
+
+    void Promise.all(toMark.map((n) => markNotificationRead(token, n.id))).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["notifications", token] }),
+    );
+  }, [matchId, messagesQuery.isSuccess, notificationsQuery.data, queryClient, token]);
 
   const match = useMemo(
     () => matchesQuery.data?.find((item) => item.matchId === matchId) || null,

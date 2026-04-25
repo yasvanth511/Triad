@@ -8,6 +8,16 @@
   --color-surface: rgba(255, 255, 255, 0.76);
   --color-border: rgba(255, 255, 255, 0.58);
   --page-max: 1240px;
+  /* Clearance for the fixed mobile bottom nav (hidden at lg+). Includes safe-area-inset-bottom
+     so content is never hidden behind the nav or the device home indicator. */
+  --bottom-nav-clearance: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* nav is lg:hidden — no nav clearance needed, match the original pb-10 */
+    --bottom-nav-clearance: 2.5rem;
+  }
 }
 
 * {
@@ -20,6 +30,7 @@ html {
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 14% 8%, rgba(124, 77, 255, 0.18), transparent 22rem),
     radial-gradient(circle at 86% 10%, rgba(219, 38, 119, 0.15), transparent 24rem),

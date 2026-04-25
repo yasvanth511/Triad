@@ -1,8 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { Heart, MapPin, SkipForward, Sparkles } from "lucide-react";
+import { Bookmark, Heart, X } from "lucide-react";
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -109,73 +108,69 @@ export function DiscoverScreen() {
         description="The web feed keeps the same Triad browsing rhythm: audience filter, profile depth, skip, save, like, and a path into richer detail."
       />
 
-      <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <div className="space-y-5">
-          <div className="glass-panel rounded-[28px] p-5">
-            <p className="mb-3 text-sm font-semibold text-[var(--color-ink)]">Audience</p>
-            <div className="grid grid-cols-3 gap-2">
-              {audienceOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setNotice(null);
-                    setHiddenIds([]);
-                    setAudience(option.value);
-                  }}
-                  className={`rounded-2xl px-3 py-2 text-sm font-semibold transition ${
-                    audience === option.value
-                      ? "bg-[linear-gradient(135deg,var(--color-accent),var(--color-secondary))] text-white"
-                      : "bg-white/70 text-[var(--color-muted-ink)]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="glass-panel rounded-[28px] p-5">
+        <p className="mb-3 text-sm font-semibold text-[var(--color-ink)]">Audience</p>
+        <div className="flex gap-2">
+          {audienceOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                setNotice(null);
+                setHiddenIds([]);
+                setAudience(option.value);
+              }}
+              className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
+                audience === option.value
+                  ? "bg-[linear-gradient(135deg,var(--color-accent),var(--color-secondary))] text-white"
+                  : "bg-white/70 text-[var(--color-muted-ink)]"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
+      </div>
 
-        <div className="space-y-5">
-          {notice ? <StateBanner title="Update" message={notice} /> : null}
+      <div className="space-y-5">
+        {notice ? <StateBanner title="Update" message={notice} /> : null}
 
-          {discoveryQuery.isLoading ? (
-            <DiscoverySkeleton />
-          ) : discoveryQuery.isError ? (
-            <EmptyState
-              title="Discovery unavailable"
-              message={discoveryQuery.error instanceof Error ? discoveryQuery.error.message : "Try again in a moment."}
-              action={
-                <Button variant="secondary" onClick={() => discoveryQuery.refetch()}>
-                  Retry
-                </Button>
+        {discoveryQuery.isLoading ? (
+          <DiscoverySkeleton />
+        ) : discoveryQuery.isError ? (
+          <EmptyState
+            title="Discovery unavailable"
+            message={discoveryQuery.error instanceof Error ? discoveryQuery.error.message : "Try again in a moment."}
+            action={
+              <Button variant="secondary" onClick={() => discoveryQuery.refetch()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : visibleCards.length === 0 ? (
+          <EmptyState
+            title="No profiles right now"
+            message="Try another audience filter or refresh after seeding more users."
+          />
+        ) : (
+          visibleCards.map((card) => (
+            <ProfilePreviewCard
+              key={card.userId}
+              profile={card}
+              viewerRedFlags={viewerRedFlags}
+              href={`/profile/${card.userId}`}
+              footer={
+                <ActionRow
+                  card={card}
+                  onSkip={() => setHiddenIds((current) => [...current, card.userId])}
+                  onSave={() => saveMutation.mutate(card.userId)}
+                  onLike={() => likeMutation.mutate(card.userId)}
+                  loadingId={saveMutation.variables || likeMutation.variables || null}
+                />
               }
             />
-          ) : visibleCards.length === 0 ? (
-            <EmptyState
-              title="No profiles right now"
-              message="Try another audience filter or refresh after seeding more users."
-            />
-          ) : (
-            visibleCards.map((card) => (
-              <ProfilePreviewCard
-                key={card.userId}
-                profile={card}
-                viewerRedFlags={viewerRedFlags}
-                href={`/profile/${card.userId}`}
-                footer={
-                  <ActionRow
-                    card={card}
-                    onSkip={() => setHiddenIds((current) => [...current, card.userId])}
-                    onSave={() => saveMutation.mutate(card.userId)}
-                    onLike={() => likeMutation.mutate(card.userId)}
-                    loadingId={saveMutation.variables || likeMutation.variables || null}
-                  />
-                }
-              />
-            ))
-          )}
-        </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -197,26 +192,19 @@ function ActionRow({
   const isWorking = loadingId === card.userId;
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button variant="secondary" onClick={onSkip}>
-        <SkipForward className="size-4" />
+    <div className="flex items-center gap-3">
+      <Button variant="secondary" size="sm" onClick={onSkip}>
+        <X className="size-4" />
         Skip
       </Button>
-      <Button variant="outline" onClick={onSave} disabled={isWorking}>
-        <MapPin className="size-4" />
+      <Button variant="outline" size="sm" onClick={onSave} disabled={isWorking}>
+        <Bookmark className="size-4" />
         Save
       </Button>
-      <Button onClick={onLike} disabled={isWorking}>
+      <Button size="sm" onClick={onLike} disabled={isWorking}>
         <Heart className="size-4" />
         Like
       </Button>
-      <Link
-        href={`/profile/${card.userId}`}
-        className="ml-auto inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-accent)]"
-      >
-        <Sparkles className="size-4" />
-        View full profile
-      </Link>
     </div>
   );
 }

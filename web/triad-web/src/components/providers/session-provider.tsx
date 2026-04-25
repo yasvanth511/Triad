@@ -17,6 +17,7 @@ import {
   register as registerRequest,
   updateProfile as updateProfileRequest,
 } from "@/lib/api/services";
+import { ApiError } from "@/lib/api/client";
 import type { SessionPhase, UpdateProfileRequest, UserProfile } from "@/lib/types";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
@@ -65,9 +66,15 @@ export function SessionProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        toast.error(error.message || "Your session expired.");
-        setToken(null);
-        setCurrentUser(null);
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          toast.error("Your session expired. Please sign in again.");
+          setToken(null);
+          setCurrentUser(null);
+        } else {
+          toast.error(error.message || "Could not load your profile.");
+          // Exit the loading state without clearing an already-loaded profile.
+          setCurrentUser((prev) => (prev === undefined ? null : prev));
+        }
       });
 
     return () => {
