@@ -17,7 +17,7 @@ export function StatusBadge({ status }: { status: Status | string | null | undef
   const cssClass = `status-${status.toLowerCase()}`;
   const label = labelMap[status] ?? status;
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cssClass}`}>
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[0.73rem] font-semibold ${cssClass}`}>
       {label}
     </span>
   );

@@ -9,9 +9,16 @@ import {
 } from '@/lib/api';
 import type { AdminChallengeSummary } from '@/lib/types';
 import StateCard from '@/components/StateCard';
-
-const TH = 'px-3 py-3.5 border-b border-[#d9e0ec] text-left text-xs font-semibold tracking-[0.04em] uppercase text-[#667085]';
-const TD = 'px-3 py-3.5 border-b border-[#d9e0ec] align-top';
+import {
+  ACTION_BTN_DANGER,
+  ACTION_BTN_OUTLINE,
+  ACTION_BTN_SUCCESS,
+  TableCard,
+  TriadTable,
+  TD,
+  TH,
+  TR_HOVER,
+} from '@/components/TableShell';
 
 export default function PendingBusinessChallengesPage() {
   const [items, setItems] = useState<AdminChallengeSummary[]>([]);
@@ -63,39 +70,55 @@ export default function PendingBusinessChallengesPage() {
   if (items.length === 0) return <StateCard title="No pending challenges" body="Everything is reviewed right now." />;
 
   return (
-    <article className="bg-white border border-[#d9e0ec] rounded-[18px] p-5 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] border-collapse">
-          <thead>
-            <tr>
-              <th className={TH}>Prompt</th>
-              <th className={TH}>Event</th>
-              <th className={TH}>Business</th>
-              <th className={TH}>Created</th>
-              <th className={TH}>Actions</th>
+    <TableCard>
+      <TriadTable className="min-w-[980px]">
+        <thead>
+          <tr>
+            <th className={TH}>Prompt</th>
+            <th className={TH}>Event</th>
+            <th className={TH}>Business</th>
+            <th className={TH}>Created</th>
+            <th className={TH}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id} className={TR_HOVER}>
+              <td className={TD}>
+                <strong className="text-[var(--color-ink)]">{item.prompt}</strong>
+              </td>
+              <td className={TD}>{item.eventTitle}</td>
+              <td className={TD}>{item.businessName}</td>
+              <td className={TD}>{new Date(item.createdAt).toLocaleString()}</td>
+              <td className={TD}>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handle('approve', item.id)}
+                    className={ACTION_BTN_SUCCESS}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handle('reject', item.id)}
+                    className={ACTION_BTN_DANGER}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handle('suspend', item.id)}
+                    className={ACTION_BTN_OUTLINE}
+                  >
+                    Suspend
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td className={TD}>
-                  <strong>{item.prompt}</strong>
-                </td>
-                <td className={TD}>{item.eventTitle}</td>
-                <td className={TD}>{item.businessName}</td>
-                <td className={TD}>{new Date(item.createdAt).toLocaleString()}</td>
-                <td className={TD}>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => void handle('approve', item.id)} className="rounded-lg bg-[#16a34a] px-3 py-2 text-sm font-semibold text-white">Approve</button>
-                    <button type="button" onClick={() => void handle('reject', item.id)} className="rounded-lg bg-[#dc2626] px-3 py-2 text-sm font-semibold text-white">Reject</button>
-                    <button type="button" onClick={() => void handle('suspend', item.id)} className="rounded-lg border border-[#d9e0ec] px-3 py-2 text-sm font-semibold text-[#0f172a]">Suspend</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </article>
+          ))}
+        </tbody>
+      </TriadTable>
+    </TableCard>
   );
 }

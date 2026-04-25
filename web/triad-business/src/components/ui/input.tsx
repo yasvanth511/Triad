@@ -12,14 +12,19 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 const baseClass =
-  "w-full border border-[var(--color-border)] rounded-xl px-3.5 py-2.5 bg-white/70 text-[var(--color-ink)] placeholder:text-[var(--color-muted-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/40 focus:border-[var(--color-accent)] transition-all";
+  "w-full rounded-2xl border border-slate-200 bg-white/90 px-4 text-sm text-[var(--color-ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] outline-none transition-colors placeholder:text-[var(--color-muted-ink)] hover:border-slate-300 focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[color:rgba(119,86,223,0.16)]";
+
+const inputHeight = "h-12";
 
 export function Input({ label, error, className, ...rest }: InputProps) {
   return (
     <label className="flex flex-col gap-1.5">
-      {label && <span className="text-sm font-medium text-[var(--color-ink)]">{label}</span>}
-      <input {...rest} className={clsx(baseClass, error && "border-red-400", className)} />
-      {error && <span className="text-xs text-red-500">{error}</span>}
+      {label && <span className="text-sm font-semibold text-[var(--color-muted-ink)]">{label}</span>}
+      <input
+        {...rest}
+        className={clsx(baseClass, inputHeight, error && "border-rose-400 focus:border-rose-500 focus:ring-rose-200", className)}
+      />
+      {error && <span className="text-xs font-medium text-rose-600">{error}</span>}
     </label>
   );
 }
@@ -27,12 +32,17 @@ export function Input({ label, error, className, ...rest }: InputProps) {
 export function Textarea({ label, error, className, ...rest }: TextareaProps) {
   return (
     <label className="flex flex-col gap-1.5">
-      {label && <span className="text-sm font-medium text-[var(--color-ink)]">{label}</span>}
+      {label && <span className="text-sm font-semibold text-[var(--color-muted-ink)]">{label}</span>}
       <textarea
         {...rest}
-        className={clsx(baseClass, "resize-none min-h-24", error && "border-red-400", className)}
+        className={clsx(
+          baseClass,
+          "min-h-28 resize-none py-3",
+          error && "border-rose-400 focus:border-rose-500 focus:ring-rose-200",
+          className,
+        )}
       />
-      {error && <span className="text-xs text-red-500">{error}</span>}
+      {error && <span className="text-xs font-medium text-rose-600">{error}</span>}
     </label>
   );
 }
@@ -46,11 +56,14 @@ export function Select({
 }: SelectHTMLAttributes<HTMLSelectElement> & { label?: string; error?: string }) {
   return (
     <label className="flex flex-col gap-1.5">
-      {label && <span className="text-sm font-medium text-[var(--color-ink)]">{label}</span>}
-      <select {...rest} className={clsx(baseClass, error && "border-red-400", className)}>
+      {label && <span className="text-sm font-semibold text-[var(--color-muted-ink)]">{label}</span>}
+      <select
+        {...rest}
+        className={clsx(baseClass, inputHeight, error && "border-rose-400 focus:border-rose-500 focus:ring-rose-200", className)}
+      >
         {children}
       </select>
-      {error && <span className="text-xs text-red-500">{error}</span>}
+      {error && <span className="text-xs font-medium text-rose-600">{error}</span>}
     </label>
   );
 }

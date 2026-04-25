@@ -56,11 +56,11 @@ export function FeatureGrid() {
           viewport={motionViewport}
           whileInView="visible"
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-cyan)]">Features</p>
-          <h2 className="display-font mt-4 text-[clamp(2.4rem,7vw,4.8rem)] font-black leading-[0.94] tracking-normal">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Features</p>
+          <h2 className="display-font mt-4 text-[clamp(2.4rem,7vw,4.8rem)] font-black leading-[0.94] tracking-[-0.05em] brand-gradient-text">
             Built for richer ways to connect.
           </h2>
-          <p className="mt-5 text-lg leading-8 text-white/68">
+          <p className="mt-5 text-lg leading-8 text-[var(--color-muted-ink)]">
             Triad brings discovery, local activity, and trust tools into one elegant public-to-private journey.
           </p>
         </motion.div>

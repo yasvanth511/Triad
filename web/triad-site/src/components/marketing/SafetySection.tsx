@@ -24,11 +24,11 @@ export function SafetySection() {
           viewport={motionViewport}
           whileInView="visible"
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-cyan)]">Safety</p>
-          <h2 className="display-font mt-4 text-[clamp(2.25rem,6vw,4.5rem)] font-black leading-[0.94] tracking-normal">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">Safety</p>
+          <h2 className="display-font mt-4 text-[clamp(2.25rem,6vw,4.5rem)] font-black leading-[0.94] tracking-[-0.05em] brand-gradient-text">
             Confidence is part of the experience.
           </h2>
-          <p className="mt-5 text-lg leading-8 text-white/68">
+          <p className="mt-5 text-lg leading-8 text-[var(--color-muted-ink)]">
             Triad is positioned around a trust-aware product foundation: verification options, reporting,
             blocking, moderation, and privacy-sensitive discovery.
           </p>
@@ -46,12 +46,14 @@ export function SafetySection() {
 
             return (
               <motion.div
-                className="rounded-[1.35rem] border border-white/12 bg-white/8 p-5"
+                className="premium-panel rounded-[24px] p-5"
                 key={item.title}
                 variants={staggerItem}
               >
-                <Icon className="size-6 text-[var(--color-cyan)]" aria-hidden="true" />
-                <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
+                <span className="grid size-10 place-items-center rounded-2xl bg-[linear-gradient(135deg,rgba(124,77,255,0.14),rgba(219,38,119,0.12))]">
+                  <Icon className="size-5 text-[var(--color-accent)]" aria-hidden="true" />
+                </span>
+                <h3 className="mt-5 text-lg font-semibold text-[var(--color-ink)]">{item.title}</h3>
               </motion.div>
             );
           })}

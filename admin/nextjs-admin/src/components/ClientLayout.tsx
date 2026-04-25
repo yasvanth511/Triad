@@ -27,27 +27,27 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] flex items-center justify-center px-4">
-      <div className="w-full max-w-[400px]">
-        {/* Logo / brand */}
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[420px]">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#1d4ed8] mb-4">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[linear-gradient(135deg,var(--color-accent),var(--color-secondary))] shadow-[0_18px_35px_rgba(119,86,223,0.28)] mb-4">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="8" r="3" fill="white" />
-              <circle cx="6" cy="14" r="2.5" fill="white" opacity="0.8" />
-              <circle cx="18" cy="14" r="2.5" fill="white" opacity="0.8" />
+              <circle cx="6" cy="14" r="2.5" fill="white" opacity="0.85" />
+              <circle cx="18" cy="14" r="2.5" fill="white" opacity="0.85" />
               <path d="M9 11.5C10.5 13 13.5 13 15 11.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[#172033] m-0">Triad Admin</h1>
-          <p className="mt-1 text-sm text-[#667085] m-0">Sign in to manage your platform</p>
+          <h1 className="page-title m-0 text-[var(--color-ink)]">Triad Admin</h1>
+          <p className="mt-2 text-sm text-[var(--color-muted-ink)] m-0">
+            Sign in to manage your platform
+          </p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white border border-[#d9e0ec] rounded-[18px] p-8 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
+        <div className="glass-panel rounded-[28px] p-7">
           <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="admin-username" className="text-sm font-semibold text-[#172033]">
+              <label htmlFor="admin-username" className="text-sm font-semibold text-[var(--color-ink)]">
                 Username
               </label>
               <input
@@ -59,12 +59,12 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="triadadmin"
-                className="rounded-xl border border-[#d9e0ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172033] placeholder:text-[#9bacc4] outline-none focus:border-[#1d4ed8] focus:ring-2 focus:ring-[#1d4ed8]/10 transition"
+                className="rounded-2xl border border-white/70 bg-white/60 px-4 py-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted-ink)] outline-none transition focus:border-[var(--color-accent)] focus:bg-white/80 focus:ring-2 focus:ring-[rgba(124,77,255,0.18)]"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="admin-password" className="text-sm font-semibold text-[#172033]">
+              <label htmlFor="admin-password" className="text-sm font-semibold text-[var(--color-ink)]">
                 Password
               </label>
               <input
@@ -75,12 +75,12 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="rounded-xl border border-[#d9e0ec] bg-[#f8fafc] px-3.5 py-2.5 text-sm text-[#172033] placeholder:text-[#9bacc4] outline-none focus:border-[#1d4ed8] focus:ring-2 focus:ring-[#1d4ed8]/10 transition"
+                className="rounded-2xl border border-white/70 bg-white/60 px-4 py-3 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted-ink)] outline-none transition focus:border-[var(--color-accent)] focus:bg-white/80 focus:ring-2 focus:ring-[rgba(124,77,255,0.18)]"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-[#dc2626] bg-[#fef2f2] border border-[#fecaca] rounded-xl px-3.5 py-2.5 m-0">
+              <p className="m-0 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-700">
                 {error}
               </p>
             )}
@@ -88,14 +88,14 @@ function LoginPage({ onSuccess }: { onSuccess: () => void }) {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-[#1d4ed8] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 hover:bg-[#1e40af] active:bg-[#1e3a8a] transition-colors"
+              className="inline-flex h-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--color-accent),var(--color-secondary))] px-5 text-sm font-semibold text-white shadow-[0_18px_35px_rgba(119,86,223,0.28)] transition hover:opacity-95 disabled:pointer-events-none disabled:opacity-60"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-[#9bacc4] mt-6">
+        <p className="text-center text-xs text-[var(--color-muted-ink)] mt-6">
           Triad Admin — restricted access
         </p>
       </div>
@@ -117,7 +117,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     setAuthed(false);
   }
 
-  // Prevent flash of dashboard before token check completes
   if (!checked) return null;
 
   if (!authed) {
@@ -125,16 +124,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <div
-      className="min-h-screen grid"
-      style={{ gridTemplateColumns: '260px minmax(0, 1fr)' }}
-    >
-      <Sidebar />
-      <div className="grid" style={{ gridTemplateRows: 'auto 1fr' }}>
-        <Header onLogout={handleLogout} />
-        <main className="px-8 pb-8 pt-3" aria-live="polite">
-          {children}
-        </main>
+    <div className="min-h-screen">
+      <div className="screen-wrap grid gap-6 py-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:py-8">
+        <Sidebar />
+        <div className="min-w-0 space-y-5">
+          <Header onLogout={handleLogout} />
+          <main className="space-y-5" aria-live="polite">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

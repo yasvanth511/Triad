@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import { fetchBusinessAuditLog } from '@/lib/api';
 import type { BusinessAuditLogItem } from '@/lib/types';
 import StateCard from '@/components/StateCard';
-
-const TH = 'px-3 py-3.5 border-b border-[#d9e0ec] text-left text-xs font-semibold tracking-[0.04em] uppercase text-[#667085]';
-const TD = 'px-3 py-3.5 border-b border-[#d9e0ec] align-top';
+import { TableCard, TriadTable, TD, TH, TR_HOVER } from '@/components/TableShell';
 
 export default function BusinessAuditPage() {
   const [items, setItems] = useState<BusinessAuditLogItem[]>([]);
@@ -27,33 +25,39 @@ export default function BusinessAuditPage() {
   if (items.length === 0) return <StateCard title="No audit history yet" body="No actions have been recorded." />;
 
   return (
-    <article className="bg-white border border-[#d9e0ec] rounded-[18px] p-5 shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1080px] border-collapse">
-          <thead>
-            <tr>
-              <th className={TH}>Action</th>
-              <th className={TH}>Created</th>
-              <th className={TH}>Target</th>
-              <th className={TH}>Reason</th>
-              <th className={TH}>Note</th>
+    <TableCard>
+      <TriadTable className="min-w-[1080px]">
+        <thead>
+          <tr>
+            <th className={TH}>Action</th>
+            <th className={TH}>Created</th>
+            <th className={TH}>Target</th>
+            <th className={TH}>Reason</th>
+            <th className={TH}>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id} className={TR_HOVER}>
+              <td className={TD}>
+                <span className="inline-flex items-center rounded-full bg-[rgba(124,77,255,0.12)] px-2.5 py-1 text-xs font-semibold text-[var(--color-accent)]">
+                  {item.action}
+                </span>
+              </td>
+              <td className={TD}>{new Date(item.createdAt).toLocaleString()}</td>
+              <td className={`${TD} font-mono text-[13px]`}>
+                {item.targetPartnerId ||
+                  item.targetEventId ||
+                  item.targetOfferId ||
+                  item.targetChallengeId ||
+                  'N/A'}
+              </td>
+              <td className={TD}>{item.reason || '—'}</td>
+              <td className={TD}>{item.note || '—'}</td>
             </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td className={TD}>{item.action}</td>
-                <td className={TD}>{new Date(item.createdAt).toLocaleString()}</td>
-                <td className={TD}>
-                  {item.targetPartnerId || item.targetEventId || item.targetOfferId || item.targetChallengeId || 'N/A'}
-                </td>
-                <td className={TD}>{item.reason || '—'}</td>
-                <td className={TD}>{item.note || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </article>
+          ))}
+        </tbody>
+      </TriadTable>
+    </TableCard>
   );
 }

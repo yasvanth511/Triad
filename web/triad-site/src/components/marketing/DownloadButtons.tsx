@@ -29,20 +29,20 @@ export function DownloadButtons({ compact = false }: { compact?: boolean }) {
 
         return (
           <motion.a
-            className="group flex min-h-16 items-center gap-3 rounded-[1.25rem] border border-white/16 bg-white/10 px-5 py-3 text-left shadow-[0_18px_48px_rgba(5,3,12,0.18)] transition hover:border-white/32 hover:bg-white/14"
+            className="group flex min-h-16 items-center gap-3 rounded-2xl border border-white/70 bg-white/65 px-5 py-3 text-left shadow-[0_18px_42px_rgba(52,28,90,0.10)] backdrop-blur-xl transition hover:border-[var(--color-accent)] hover:bg-white/85"
             href={button.href}
             key={button.label}
             variants={staggerItem}
             whileTap={buttonTap}
           >
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[#140a24] transition group-hover:scale-105">
+            <span className="grid size-10 shrink-0 place-items-center rounded-2xl brand-gradient-bg text-white shadow-[0_12px_24px_rgba(119,86,223,0.24)] transition group-hover:scale-105">
               <Icon className="size-5" aria-hidden="true" />
             </span>
             <span>
-              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/52">
+              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-ink)]">
                 {button.eyebrow}
               </span>
-              <span className="block text-base font-semibold text-white">{button.label}</span>
+              <span className="block text-base font-semibold text-[var(--color-ink)]">{button.label}</span>
             </span>
           </motion.a>
         );

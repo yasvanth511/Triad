@@ -25,7 +25,9 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen md:flex">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-6 min-h-screen">{children}</main>
+      <main className="flex-1 min-w-0 p-4 md:py-6 md:pl-[17.5rem] md:pr-6 min-h-screen">
+        <div className="mx-auto w-full max-w-[1240px]">{children}</div>
+      </main>
     </div>
   );
 }

@@ -5,7 +5,14 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Segoe UI"', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-body)', '"Plus Jakarta Sans"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Fraunces', 'serif'],
+      },
+      colors: {
+        ink: '#241636',
+        'muted-ink': '#6a5a84',
+        accent: '#7c4dff',
+        secondary: '#db2677',
       },
     },
   },
