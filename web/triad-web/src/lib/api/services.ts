@@ -2,6 +2,8 @@ import { apiRequest } from "@/lib/api/client";
 import type {
   AppNotification,
   AuthResponse,
+  CoupleStatus,
+  CreateCoupleResponse,
   DiscoveryCard,
   EventInterestToggleResponse,
   EventItem,
@@ -221,6 +223,33 @@ export async function markAllNotificationsRead(token: string) {
     method: "POST",
     token,
     body: {},
+  });
+}
+
+export async function getCoupleStatus(token: string) {
+  return apiRequest<CoupleStatus>("couple", { token });
+}
+
+export async function createCouple(token: string) {
+  return apiRequest<CreateCoupleResponse>("couple", {
+    method: "POST",
+    token,
+    body: {},
+  });
+}
+
+export async function joinCouple(token: string, inviteCode: string) {
+  return apiRequest<CreateCoupleResponse>("couple/join", {
+    method: "POST",
+    token,
+    body: { inviteCode },
+  });
+}
+
+export async function leaveCouple(token: string) {
+  return apiRequest("couple", {
+    method: "DELETE",
+    token,
   });
 }
 

@@ -5,7 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/common/repo-root.sh"
 
 ROOT_DIR="$(repo_root_from_script "${BASH_SOURCE[0]}")"
 COMMAND="${1:-help}"
-SERVICE="${2:-${DOCKER_SERVICE:-api}}"
+SERVICE="${2:-${DOCKER_SERVICE:-triad-backend}}"
 PROJECT_NAME="${DOCKER_PROJECT_NAME:-triad}"
 ENV_FILE="${DOCKER_ENV_FILE:-$ROOT_DIR/.env.docker}"
 UPLOADS_VOLUME="${DOCKER_UPLOADS_VOLUME:-triad_api_uploads}"
@@ -40,13 +40,11 @@ Commands:
   help     Show this message
 
 Services:
-  api      ASP.NET Core backend
-  admin    Internal admin dashboard
-  web      Consumer Next.js web app
-  triad-business
-           Business partner Next.js portal
-  triad-site
-           Public marketing website
+  triad-backend   ASP.NET Core backend
+  triad-admin     Internal admin dashboard
+  triad-web       Consumer Next.js web app
+  triad-business  Business partner Next.js portal
+  triad-marketing Public marketing website
 
 Key env vars:
   DOCKER_ENV_FILE, DOCKER_IMAGE_NAME, DOCKER_IMAGE_TAG
@@ -89,10 +87,11 @@ ensure_env_file() {
 
 configure_service() {
   case "$SERVICE" in
-    api)
-      IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-api}"
+    triad-backend|backend)
+      SERVICE="triad-backend"
+      IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-backend}"
       IMAGE_TAG="${DOCKER_IMAGE_TAG:-dev}"
-      CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-triad-api}"
+      CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-triad-backend}"
       BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/backend/ThirdWheel.API}"
       DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
       HOST_PORT="${API_PORT:-5127}"
@@ -103,7 +102,8 @@ configure_service() {
         -v "${UPLOADS_VOLUME}:/app/uploads"
       )
       ;;
-    admin)
+    triad-admin|admin)
+      SERVICE="triad-admin"
       IMAGE_NAME="${ADMIN_IMAGE_NAME:-triad-admin}"
       IMAGE_TAG="${ADMIN_IMAGE_TAG:-dev}"
       CONTAINER_NAME="${ADMIN_CONTAINER_NAME:-triad-admin}"
@@ -113,7 +113,8 @@ configure_service() {
       CONTAINER_PORT="${DOCKER_CONTAINER_PORT:-80}"
       REQUIRES_ENV_FILE=0
       ;;
-    web)
+    triad-web|web)
+      SERVICE="triad-web"
       IMAGE_NAME="${WEB_IMAGE_NAME:-triad-web}"
       IMAGE_TAG="${WEB_IMAGE_TAG:-dev}"
       CONTAINER_NAME="${WEB_CONTAINER_NAME:-triad-web}"
@@ -150,11 +151,11 @@ configure_service() {
         -e "HOSTNAME=0.0.0.0"
       )
       ;;
-    triad-site|site)
-      SERVICE="triad-site"
-      IMAGE_NAME="${SITE_IMAGE_NAME:-triad-site}"
+    triad-marketing|marketing|site)
+      SERVICE="triad-marketing"
+      IMAGE_NAME="${SITE_IMAGE_NAME:-triad-marketing}"
       IMAGE_TAG="${SITE_IMAGE_TAG:-dev}"
-      CONTAINER_NAME="${SITE_CONTAINER_NAME:-triad-site}"
+      CONTAINER_NAME="${SITE_CONTAINER_NAME:-triad-marketing}"
       BUILD_CONTEXT="${DOCKER_BUILD_CONTEXT:-$ROOT_DIR/web/triad-site}"
       DOCKERFILE_PATH="${DOCKERFILE_PATH:-$BUILD_CONTEXT/Dockerfile}"
       HOST_PORT="${SITE_PORT:-3003}"
@@ -178,7 +179,7 @@ configure_service() {
       )
       ;;
     *)
-      fail "unsupported service: $SERVICE (expected api, admin, web, triad-business, or triad-site)"
+      fail "unsupported service: $SERVICE (expected triad-backend, triad-admin, triad-web, triad-business, or triad-marketing)"
       ;;
   esac
 
@@ -201,7 +202,7 @@ direct_container_exists() {
 
 export_runtime_env() {
   export DOCKER_ENV_FILE="$ENV_FILE"
-  export DOCKER_IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-api}"
+  export DOCKER_IMAGE_NAME="${DOCKER_IMAGE_NAME:-triad-backend}"
   export DOCKER_IMAGE_TAG="${DOCKER_IMAGE_TAG:-dev}"
   export ADMIN_IMAGE_NAME="${ADMIN_IMAGE_NAME:-triad-admin}"
   export ADMIN_IMAGE_TAG="${ADMIN_IMAGE_TAG:-dev}"
@@ -209,7 +210,7 @@ export_runtime_env() {
   export WEB_IMAGE_TAG="${WEB_IMAGE_TAG:-dev}"
   export BUSINESS_IMAGE_NAME="${BUSINESS_IMAGE_NAME:-triad-business}"
   export BUSINESS_IMAGE_TAG="${BUSINESS_IMAGE_TAG:-dev}"
-  export SITE_IMAGE_NAME="${SITE_IMAGE_NAME:-triad-site}"
+  export SITE_IMAGE_NAME="${SITE_IMAGE_NAME:-triad-marketing}"
   export SITE_IMAGE_TAG="${SITE_IMAGE_TAG:-dev}"
   export API_PORT="${API_PORT:-5127}"
   export ADMIN_PORT="${ADMIN_PORT:-5173}"
@@ -254,7 +255,7 @@ run_direct() {
 }
 
 compose_up() {
-  if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" || "$SERVICE" == "triad-business" ]]; then
+  if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "triad-admin" || "$SERVICE" == "triad-web" || "$SERVICE" == "triad-business" ]]; then
     ensure_env_file
   fi
   export_runtime_env
@@ -334,7 +335,7 @@ restart_all() {
 
 rebuild_all() {
   if [[ -n "$COMPOSE_FILE" ]]; then
-    if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "admin" || "$SERVICE" == "web" || "$SERVICE" == "triad-business" ]]; then
+    if [[ "$REQUIRES_ENV_FILE" == "1" || "$SERVICE" == "triad-admin" || "$SERVICE" == "triad-web" || "$SERVICE" == "triad-business" ]]; then
       ensure_env_file
     fi
     export_runtime_env

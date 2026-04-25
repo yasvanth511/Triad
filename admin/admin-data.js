@@ -70,7 +70,8 @@ async function fetchAdminJson(url) {
 
 /** @returns {Promise<AdminSafeUserSummary[]>} */
 async function fetchAdminUsers() {
-  return toAdminSafeList(await fetchAdminJson(ADMIN_ENDPOINTS.users));
+  const result = await fetchAdminJson(ADMIN_ENDPOINTS.users);
+  return toAdminSafeList(Array.isArray(result) ? result : result.items);
 }
 
 /** @returns {Promise<AdminSafeUserSummary[]>} */

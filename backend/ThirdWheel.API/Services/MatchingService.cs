@@ -27,15 +27,23 @@ public class MatchingService
             if (fromUserId == toUserId)
                 throw new InvalidOperationException("Cannot like yourself.");
 
-            var isBlocked = await _db.Blocks.AnyAsync(b =>
-                (b.BlockerUserId == fromUserId && b.BlockedUserId == toUserId) ||
-                (b.BlockerUserId == toUserId && b.BlockedUserId == fromUserId));
-            if (isBlocked)
-                throw new InvalidOperationException("Cannot interact with this user.");
+            // Step 2: block check + duplicate like check in one round-trip
+            var guard = await _db.Users
+                .Where(u => u.Id == fromUserId)
+                .Select(u => new
+                {
+                    IsBlocked = _db.Blocks.Any(b =>
+                        (b.BlockerUserId == fromUserId && b.BlockedUserId == toUserId) ||
+                        (b.BlockerUserId == toUserId && b.BlockedUserId == fromUserId)),
+                    AlreadyLiked = _db.Likes.Any(l => l.FromUserId == fromUserId && l.ToUserId == toUserId)
+                })
+                .FirstOrDefaultAsync();
 
-            var existing = await _db.Likes
-                .AnyAsync(l => l.FromUserId == fromUserId && l.ToUserId == toUserId);
-            if (existing)
+            if (guard == null)
+                throw new KeyNotFoundException("User not found.");
+            if (guard.IsBlocked)
+                throw new InvalidOperationException("Cannot interact with this user.");
+            if (guard.AlreadyLiked)
                 throw new InvalidOperationException("Already liked this user.");
 
             var todayLikes = await _db.Likes
@@ -44,10 +52,12 @@ public class MatchingService
             if (todayLikes >= AppConstants.MaxLikesPerDay)
                 throw new InvalidOperationException("Daily like limit reached.");
 
-            var fromUser = await _db.Users.FindAsync(fromUserId);
-            var toUser = await _db.Users.FindAsync(toUserId);
-            if (fromUser == null || toUser == null)
-                throw new KeyNotFoundException("User not found.");
+            // Step 1: both users in one query
+            var users = await _db.Users
+                .Where(u => u.Id == fromUserId || u.Id == toUserId)
+                .ToDictionaryAsync(u => u.Id);
+            var fromUser = users.GetValueOrDefault(fromUserId) ?? throw new KeyNotFoundException("User not found.");
+            var toUser   = users.GetValueOrDefault(toUserId)   ?? throw new KeyNotFoundException("User not found.");
 
             var like = new Like
             {
@@ -81,7 +91,8 @@ public class MatchingService
                 _db.Matches.Add(match);
                 await _db.SaveChangesAsync();
 
-                try { await _notifications.NotifyMatchAsync(match, fromUserId); } catch { }
+                // Step 3: fire-and-forget — don't block the response on notification I/O
+                _ = Task.Run(async () => { try { await _notifications.NotifyMatchAsync(match, fromUserId); } catch { } });
 
                 var participants = await ResolveParticipantsAsync(match, fromUserId);
                 Telemetry.MatchOperations.Add(1,
@@ -92,7 +103,8 @@ public class MatchingService
                 return new MatchResponse(match.Id, participants, match.CreatedAt, participants.Count > 1);
             }
 
-            try { await _notifications.NotifyLikeAsync(fromUserId, toUserId); } catch { }
+            // Step 3: fire-and-forget — don't block the response on notification I/O
+            _ = Task.Run(async () => { try { await _notifications.NotifyLikeAsync(fromUserId, toUserId); } catch { } });
 
             Telemetry.MatchOperations.Add(1,
                 new KeyValuePair<string, object?>("operation", "like"),

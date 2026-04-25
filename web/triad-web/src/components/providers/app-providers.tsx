@@ -14,7 +14,7 @@ export function AppProviders({ children }: PropsWithChildren) {
           queries: {
             retry: 1,
             refetchOnWindowFocus: false,
-            staleTime: 15_000,
+            staleTime: 30_000,
           },
         },
       }),

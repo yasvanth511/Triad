@@ -147,8 +147,17 @@ public class NotificationService
             .Take(take)
             .ToListAsync();
 
-        var unreadCount = await _db.Notifications
-            .CountAsync(n => n.RecipientId == userId && !n.IsRead);
+        // Skip the count query when this is the last page; derive from local results instead.
+        int unreadCount;
+        if (notifications.Count < take)
+        {
+            unreadCount = notifications.Count(n => !n.IsRead);
+        }
+        else
+        {
+            unreadCount = await _db.Notifications
+                .CountAsync(n => n.RecipientId == userId && !n.IsRead);
+        }
 
         return new NotificationListResponse(notifications.Select(Map).ToList(), unreadCount);
     }

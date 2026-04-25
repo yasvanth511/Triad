@@ -359,6 +359,23 @@ struct UploadVideoBioResponse: Decodable {
 
 struct EmptyResponse: Decodable {}
 
+struct CoupleStatus: Codable {
+    let coupleId: UUID?
+    let inviteCode: String?
+    let isComplete: Bool
+    let partnerName: String?
+    let partnerUserId: UUID?
+}
+
+struct CreateCoupleResponse: Codable {
+    let coupleId: UUID
+    let inviteCode: String
+}
+
+struct JoinCoupleRequest: Encodable {
+    let inviteCode: String
+}
+
 extension JSONDecoder {
     static let triadDecoder: JSONDecoder = {
         let decoder = JSONDecoder()

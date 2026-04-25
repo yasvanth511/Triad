@@ -388,6 +388,34 @@ final class SessionStore: ObservableObject {
         notificationUnreadCount = result.unreadCount
     }
 
+    // MARK: – Couple
+
+    func loadCoupleStatus() async throws -> CoupleStatus {
+        try await client.get("couple")
+    }
+
+    @discardableResult
+    func createCouple() async throws -> CreateCoupleResponse {
+        let response: CreateCoupleResponse = try await client.post("couple", body: EmptyRequest())
+        try? await reloadCurrentUser()
+        return response
+    }
+
+    @discardableResult
+    func joinCouple(inviteCode: String) async throws -> CreateCoupleResponse {
+        let response: CreateCoupleResponse = try await client.post(
+            "couple/join",
+            body: JoinCoupleRequest(inviteCode: inviteCode)
+        )
+        try? await reloadCurrentUser()
+        return response
+    }
+
+    func leaveCouple() async throws {
+        try await client.delete("couple")
+        try? await reloadCurrentUser()
+    }
+
     func clearError() {
         lastErrorMessage = nil
     }

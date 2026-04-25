@@ -89,17 +89,9 @@ public class DiscoveryService
                     u.Longitude >= (double?)lonMin && u.Longitude <= (double?)lonMax);
             }
 
-            // ── Deterministic random: stable per-user seed avoids full-table sort ──
-            // Skip a random offset within the eligible pool rather than sorting the
-            // entire table by Guid.NewGuid(), which cannot use any index.
-            var totalEligible = await query.CountAsync();
-            var randomOffset = totalEligible > filter.Take
-                ? Random.Shared.Next(0, totalEligible - filter.Take)
-                : 0;
-
             var users = await query
-                .OrderBy(u => u.CreatedAt)   // stable, index-friendly sort
-                .Skip(randomOffset + filter.Skip)
+                .OrderBy(u => u.CreatedAt)
+                .Skip(filter.Skip)
                 .Take(filter.Take)
                 .ToListAsync();
 

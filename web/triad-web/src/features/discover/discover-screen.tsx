@@ -34,6 +34,7 @@ export function DiscoverScreen() {
     queryKey: ["discover", audience, token],
     queryFn: () => getDiscovery(token!, audience === "all" ? null : audience),
     enabled: Boolean(token),
+    staleTime: 10_000,
   });
 
   const saveMutation = useMutation({

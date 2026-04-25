@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { StateBanner } from "@/components/ui/state-banner";
 import { Textarea } from "@/components/ui/textarea";
+import { CoupleLinkCard } from "@/features/profile/couple-link-card";
 
 const profileSchema = z.object({
   bio: z.string().max(500),
@@ -62,8 +63,10 @@ export function EditProfileScreen() {
       <StateBanner
         title="Native Media TODO"
         tone="blue"
-        message="TODO: photo ordering, audio bio capture, video highlights, and couple-linking need dedicated web upload and management surfaces."
+        message="TODO: photo ordering, audio bio capture, and video highlights need dedicated web upload and management surfaces."
       />
+
+      <CoupleLinkCard />
 
       <form
         className="space-y-5"

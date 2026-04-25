@@ -164,3 +164,13 @@
 /workspace/tests/ThirdWheel.API.UnitTests/obj/Debug/net10.0/ThirdWheel.API.UnitTests.pdb
 /workspace/tests/ThirdWheel.API.UnitTests/obj/Debug/net10.0/ThirdWheel.API.UnitTests.genruntimeconfig.cache
 /workspace/tests/ThirdWheel.API.UnitTests/obj/Debug/net10.0/ref/ThirdWheel.API.UnitTests.dll
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\bin\Debug\net10.0\.msCoverageSourceRootsMapping_ThirdWheel.API.UnitTests
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.csproj.AssemblyReference.cache
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.AssemblyInfoInputs.cache
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.AssemblyInfo.cs
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.csproj.CoreCompileInputs.cache
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.sourcelink.json
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.dll
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\refint\ThirdWheel.API.UnitTests.dll
+C:\Apps\Triad\tests\ThirdWheel.API.UnitTests\obj\Debug\net10.0\ThirdWheel.API.UnitTests.pdb

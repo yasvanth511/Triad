@@ -55,12 +55,6 @@ public class ProfileService
 
         try
         {
-            var isBlocked = await _db.Blocks.AnyAsync(b =>
-                (b.BlockerUserId == viewerId && b.BlockedUserId == userId) ||
-                (b.BlockerUserId == userId && b.BlockedUserId == viewerId));
-            if (isBlocked)
-                throw new KeyNotFoundException("User not found.");
-
             var user = await _db.Users
                 .AsSplitQuery()
                 .Include(u => u.Photos)
@@ -69,7 +63,10 @@ public class ProfileService
                 .Include(u => u.RedFlags)
                 .Include(u => u.Couple)
                     .ThenInclude(c => c!.Members)
-                .FirstOrDefaultAsync(u => u.Id == userId && !u.IsBanned)
+                .FirstOrDefaultAsync(u => u.Id == userId && !u.IsBanned &&
+                    !_db.Blocks.Any(b =>
+                        (b.BlockerUserId == viewerId && b.BlockedUserId == u.Id) ||
+                        (b.BlockerUserId == u.Id && b.BlockedUserId == viewerId)))
                 ?? throw new KeyNotFoundException("User not found.");
 
             Telemetry.ProfileOperations.Add(1,
@@ -193,12 +190,6 @@ public class ProfileService
         activity?.SetTag("enduser.id", userId);
 
         var user = await _db.Users
-            .Include(u => u.Photos)
-            .Include(u => u.Videos)
-            .Include(u => u.Interests)
-            .Include(u => u.RedFlags)
-            .Include(u => u.Couple)
-                .ThenInclude(c => c!.Members)
             .FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new KeyNotFoundException("User not found.");
 
@@ -211,7 +202,7 @@ public class ProfileService
             new KeyValuePair<string, object?>("operation", "set_audio_bio_url"),
             new KeyValuePair<string, object?>("outcome", "success"));
         Telemetry.MarkSuccess(activity);
-        return (oldUrl, UserMapper.ToProfileResponse(user));
+        return (oldUrl, await GetProfileAsync(userId));
     }
 
     public async Task<(string? OldVideoBioUrl, UserProfileResponse Profile)> SetVideoBioUrlAsync(Guid userId, string? url)
@@ -220,12 +211,7 @@ public class ProfileService
         activity?.SetTag("enduser.id", userId);
 
         var user = await _db.Users
-            .Include(u => u.Photos)
             .Include(u => u.Videos)
-            .Include(u => u.Interests)
-            .Include(u => u.RedFlags)
-            .Include(u => u.Couple)
-                .ThenInclude(c => c!.Members)
             .FirstOrDefaultAsync(u => u.Id == userId)
             ?? throw new KeyNotFoundException("User not found.");
 
@@ -269,7 +255,7 @@ public class ProfileService
             new KeyValuePair<string, object?>("operation", "set_video_bio_url"),
             new KeyValuePair<string, object?>("outcome", "success"));
         Telemetry.MarkSuccess(activity);
-        return (oldUrl, UserMapper.ToProfileResponse(user));
+        return (oldUrl, await GetProfileAsync(userId));
     }
 
     public async Task<PhotoResponse> AddPhotoAsync(Guid userId, string url)

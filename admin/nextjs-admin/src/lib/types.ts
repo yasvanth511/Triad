@@ -11,6 +11,15 @@ export interface ReportReason {
   count?: number;
 }
 
+export interface UserListResponse {
+  items: UserSummary[];
+  total: number;
+  totalSingles: number;
+  totalCouples: number;
+  skip: number;
+  take: number;
+}
+
 export interface UserSummary {
   id?: string | number;
   displayName?: string;

@@ -1,15 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarPlus, Gift, Sparkles } from "lucide-react";
+import { CalendarPlus, Gift, RefreshCw } from "lucide-react";
 import { useSession } from "@/components/providers/session-provider";
 import { getMyEvents, getAnalytics } from "@/lib/api/services";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
-  const { token, partner } = useSession();
+  const { token, partner, refreshPartner } = useSession();
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await refreshPartner();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const eventsQuery = useQuery({
     queryKey: ["my-events"],
@@ -39,7 +50,20 @@ export default function DashboardPage() {
             {isApproved ? "Your account is active." : "Your account is pending review before you can publish content."}
           </p>
         </div>
-        {partner && <StatusBadge status={partner.status} />}
+        <div className="flex items-center gap-3">
+          {partner && <StatusBadge status={partner.status} />}
+          {!isApproved && (
+            <button
+              type="button"
+              onClick={() => void handleRefresh()}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 text-xs text-[var(--color-muted-ink)] hover:text-[var(--color-ink)] transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Checking…" : "Check status"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Setup prompt */}

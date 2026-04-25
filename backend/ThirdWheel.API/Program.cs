@@ -119,8 +119,19 @@ builder.Services.AddScoped<BusinessAnalyticsService>();
 builder.Services.AddScoped<BusinessAdminService>();
 
 // Controllers + SignalR
-builder.Services.AddControllers();
-builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddOpenApi();
 
 builder.Logging.AddOpenTelemetry(options =>
@@ -246,115 +257,50 @@ if (app.Environment.IsDevelopment())
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
 
-        var users = await db.Users
-            .Include(u => u.Photos)
-            .Include(u => u.Videos)
-            .ToListAsync();
-        var changed = false;
+        await db.Database.ExecuteSqlRawAsync("""
+            WITH ranked AS (
+                SELECT "Id",
+                       (ROW_NUMBER() OVER (PARTITION BY "UserId" ORDER BY "SortOrder", "CreatedAt") - 1)::int AS new_order
+                FROM "UserPhotos"
+            )
+            UPDATE "UserPhotos" p
+            SET "SortOrder" = r.new_order
+            FROM ranked r
+            WHERE p."Id" = r."Id"
+              AND p."SortOrder" != r.new_order
+            """);
 
-        foreach (var user in users)
+        await db.Database.ExecuteSqlRawAsync("""
+            WITH ranked AS (
+                SELECT "Id",
+                       (ROW_NUMBER() OVER (PARTITION BY "UserId" ORDER BY "SortOrder", "CreatedAt") - 1)::int AS new_order
+                FROM "UserVideos"
+            )
+            UPDATE "UserVideos" v
+            SET "SortOrder" = r.new_order
+            FROM ranked r
+            WHERE v."Id" = r."Id"
+              AND v."SortOrder" != r.new_order
+            """);
+
+        await db.Database.ExecuteSqlRawAsync("""
+            UPDATE "Users"
+            SET "VideoBioUrl" = (
+                SELECT "Url" FROM "UserVideos"
+                WHERE "UserId" = "Users"."Id"
+                ORDER BY "SortOrder", "CreatedAt"
+                LIMIT 1
+            )
+            """);
+
+        // Seed default admin user
+        if (!await db.AdminUsers.AnyAsync(a => a.Username == "triadadmin"))
         {
-            var orderedPhotos = user.Photos
-                .OrderBy(p => p.SortOrder)
-                .ThenBy(p => p.CreatedAt)
-                .ToList();
-            var customPhotos = orderedPhotos
-                .Where(p => p.Url != DefaultProfilePhoto.DataUrl)
-                .ToList();
-
-            if (customPhotos.Count == 0)
+            db.AdminUsers.Add(new ThirdWheel.API.Models.AdminUser
             {
-                if (orderedPhotos.Count == 0)
-                {
-                    db.UserPhotos.Add(DefaultProfilePhoto.Create(user.Id));
-                    changed = true;
-                }
-                else
-                {
-                    var primaryPhoto = orderedPhotos.First();
-                    if (primaryPhoto.Url != DefaultProfilePhoto.DataUrl || primaryPhoto.SortOrder != 0)
-                    {
-                        primaryPhoto.Url = DefaultProfilePhoto.DataUrl;
-                        primaryPhoto.SortOrder = 0;
-                        changed = true;
-                    }
-
-                    if (orderedPhotos.Count > 1)
-                    {
-                        db.UserPhotos.RemoveRange(orderedPhotos.Skip(1));
-                        changed = true;
-                    }
-                }
-            }
-            else
-            {
-                var defaultPhotos = orderedPhotos.Where(p => p.Url == DefaultProfilePhoto.DataUrl).ToList();
-                if (defaultPhotos.Count > 0)
-                {
-                    db.UserPhotos.RemoveRange(defaultPhotos);
-                    changed = true;
-                }
-
-                foreach (var photo in customPhotos.Take(AppConstants.MaxPhotos).Select((photo, index) => new { photo, index }))
-                {
-                    if (photo.photo.SortOrder != photo.index)
-                    {
-                        photo.photo.SortOrder = photo.index;
-                        changed = true;
-                    }
-                }
-
-                if (customPhotos.Count > AppConstants.MaxPhotos)
-                {
-                    db.UserPhotos.RemoveRange(customPhotos.Skip(AppConstants.MaxPhotos));
-                    changed = true;
-                }
-            }
-
-            var orderedVideos = user.Videos
-                .OrderBy(v => v.SortOrder)
-                .ThenBy(v => v.CreatedAt)
-                .ToList();
-
-            if (orderedVideos.Count == 0 && !string.IsNullOrWhiteSpace(user.VideoBioUrl))
-            {
-                var migratedVideo = new ThirdWheel.API.Models.UserVideo
-                {
-                    UserId = user.Id,
-                    Url = user.VideoBioUrl,
-                    SortOrder = 0
-                };
-                db.UserVideos.Add(migratedVideo);
-                orderedVideos.Add(migratedVideo);
-                changed = true;
-            }
-
-            foreach (var video in orderedVideos.Take(AppConstants.MaxVideos).Select((video, index) => new { video, index }))
-            {
-                if (video.video.SortOrder != video.index)
-                {
-                    video.video.SortOrder = video.index;
-                    changed = true;
-                }
-            }
-
-            if (orderedVideos.Count > AppConstants.MaxVideos)
-            {
-                db.UserVideos.RemoveRange(orderedVideos.Skip(AppConstants.MaxVideos));
-                orderedVideos = orderedVideos.Take(AppConstants.MaxVideos).ToList();
-                changed = true;
-            }
-
-            var primaryVideoUrl = orderedVideos.FirstOrDefault()?.Url;
-            if (user.VideoBioUrl != primaryVideoUrl)
-            {
-                user.VideoBioUrl = primaryVideoUrl;
-                changed = true;
-            }
-        }
-
-        if (changed)
-        {
+                Username = "triadadmin",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin@123")
+            });
             await db.SaveChangesAsync();
         }
     }
@@ -379,7 +325,11 @@ Directory.CreateDirectory(uploadsPath);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
+    RequestPath = "/uploads",
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+    }
 });
 
 app.MapHealthChecks("/health", new HealthCheckOptions())

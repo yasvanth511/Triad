@@ -6,6 +6,7 @@ import type {
   BusinessAuditLogItem,
   ModerationAnalytics,
   UserDetail,
+  UserListResponse,
   UserSummary,
 } from './types';
 
@@ -41,9 +42,58 @@ async function postJson<T>(url: string, body: unknown = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function fetchUsers(): Promise<UserSummary[]> {
-  const data = await fetchJson<unknown>('/api/admin/users');
-  return Array.isArray(data) ? (data as UserSummary[]) : [];
+export async function fetchUsers(skip = 0, take = 50): Promise<UserListResponse> {
+  const data = await fetchJson<unknown>(`/api/admin/users?skip=${skip}&take=${take}`);
+  if (Array.isArray(data)) {
+    const items = data as UserSummary[];
+    return { items, total: items.length, totalSingles: 0, totalCouples: 0, skip, take };
+  }
+  const e = data as Partial<UserListResponse>;
+  return {
+    items: Array.isArray(e.items) ? (e.items as UserSummary[]) : [],
+    total: e.total ?? 0,
+    totalSingles: e.totalSingles ?? 0,
+    totalCouples: e.totalCouples ?? 0,
+    skip: e.skip ?? skip,
+    take: e.take ?? take,
+  };
+}
+
+export async function fetchAllUsers(): Promise<UserSummary[]> {
+  const PAGE_SIZE = 200;
+  const first = await fetchUsers(0, PAGE_SIZE);
+  const all: UserSummary[] = [...first.items];
+  let skip = PAGE_SIZE;
+  while (skip < first.total) {
+    const page = await fetchUsers(skip, PAGE_SIZE);
+    all.push(...page.items);
+    skip += PAGE_SIZE;
+  }
+  return all;
+}
+
+export async function login(email: string, password: string): Promise<string> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error(`Login failed (${res.status})`);
+  const body = (await res.json()) as { token?: string };
+  if (!body.token) throw new Error('No token in response');
+  return body.token;
+}
+
+export async function adminLogin(username: string, password: string): Promise<string> {
+  const res = await fetch('/api/admin/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) throw new Error('Invalid username or password.');
+  const body = (await res.json()) as { token?: string };
+  if (!body.token) throw new Error('No token in response');
+  return body.token;
 }
 
 export async function fetchOnlineUsers(): Promise<UserSummary[]> {

@@ -12,7 +12,8 @@ const labelMap: Record<string, string> = {
   FreeItem: "Free Item",
 };
 
-export function StatusBadge({ status }: { status: Status | string }) {
+export function StatusBadge({ status }: { status: Status | string | null | undefined }) {
+  if (!status || typeof status !== "string") return null;
   const cssClass = `status-${status.toLowerCase()}`;
   const label = labelMap[status] ?? status;
   return (

@@ -29,6 +29,7 @@
 		A10000010000000000000014 /* ImpressMeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016 /* ImpressMeView.swift */; };
 		A10000010000000000000015 /* ImpressMeRespondView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017 /* ImpressMeRespondView.swift */; };
 		A10000010000000000000016 /* ImpressMeReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018 /* ImpressMeReviewView.swift */; };
+		A10000010000000000000017 /* CoupleLinkCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019 /* CoupleLinkCard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		A20000010000000000000016 /* ImpressMeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpressMeView.swift; sourceTree = "<group>"; };
 		A20000010000000000000017 /* ImpressMeRespondView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpressMeRespondView.swift; sourceTree = "<group>"; };
 		A20000010000000000000018 /* ImpressMeReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpressMeReviewView.swift; sourceTree = "<group>"; };
+		A20000010000000000000019 /* CoupleLinkCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoupleLinkCard.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +102,7 @@
 				A20000010000000000000016 /* ImpressMeView.swift */,
 				A20000010000000000000017 /* ImpressMeRespondView.swift */,
 				A20000010000000000000018 /* ImpressMeReviewView.swift */,
+				A20000010000000000000019 /* CoupleLinkCard.swift */,
 				A20000010000000000000001 /* ThirdWheelNativeApp.swift */,
 				A20000010000000000000010 /* Assets.xcassets */,
 				A20000010000000000000011 /* Info.plist */,
@@ -204,6 +207,7 @@
 				A10000010000000000000014 /* ImpressMeView.swift in Sources */,
 				A10000010000000000000015 /* ImpressMeRespondView.swift in Sources */,
 				A10000010000000000000016 /* ImpressMeReviewView.swift in Sources */,
+				A10000010000000000000017 /* CoupleLinkCard.swift in Sources */,
 				A10000010000000000000001 /* ThirdWheelNativeApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

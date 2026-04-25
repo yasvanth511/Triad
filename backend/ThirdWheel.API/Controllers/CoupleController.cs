@@ -12,6 +12,13 @@ public class CoupleController : BaseController
 
     public CoupleController(CoupleService coupleService) => _coupleService = coupleService;
 
+    [HttpGet]
+    public async Task<ActionResult<CoupleStatusResponse>> GetStatus()
+    {
+        var result = await _coupleService.GetCoupleStatusAsync(GetUserId());
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<ActionResult<CreateCoupleResponse>> CreateCouple()
     {

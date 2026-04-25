@@ -17,10 +17,10 @@ public class EventController : BaseController
 
     // GET /api/event — upcoming events filtered by user's radius
     [HttpGet]
-    public async Task<IActionResult> GetEvents()
+    public async Task<IActionResult> GetEvents([FromQuery] int skip = 0, [FromQuery] int take = 50)
     {
         var userId = GetUserId();
-        var events = await _eventService.GetEventsAsync(userId);
+        var events = await _eventService.GetEventsAsync(userId, skip, take);
         return Ok(events);
     }
 

@@ -1,21 +1,26 @@
 {
   "format": 1,
   "restore": {
-    "/workspace/tests/ThirdWheel.API.IntegrationTests/ThirdWheel.API.IntegrationTests.csproj": {}
+    "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\ThirdWheel.API.IntegrationTests.csproj": {}
   },
   "projects": {
-    "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj": {
+    "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj",
+        "projectUniqueName": "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj",
         "projectName": "ThirdWheel.API",
-        "projectPath": "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj",
-        "packagesPath": "/tmp/nuget",
-        "outputPath": "/workspace/backend/ThirdWheel.API/obj/",
+        "projectPath": "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj",
+        "packagesPath": "C:\\Users\\yasva\\.nuget\\packages\\",
+        "outputPath": "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/workspace/nuget.config",
-          "/tmp/.nuget/NuGet/NuGet.Config"
+          "C:\\Apps\\Triad\\NuGet.Config",
+          "C:\\Users\\yasva\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -137,7 +142,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
@@ -555,18 +560,23 @@
         }
       }
     },
-    "/workspace/tests/ThirdWheel.API.IntegrationTests/ThirdWheel.API.IntegrationTests.csproj": {
+    "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\ThirdWheel.API.IntegrationTests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/workspace/tests/ThirdWheel.API.IntegrationTests/ThirdWheel.API.IntegrationTests.csproj",
+        "projectUniqueName": "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\ThirdWheel.API.IntegrationTests.csproj",
         "projectName": "ThirdWheel.API.IntegrationTests",
-        "projectPath": "/workspace/tests/ThirdWheel.API.IntegrationTests/ThirdWheel.API.IntegrationTests.csproj",
-        "packagesPath": "/tmp/nuget",
-        "outputPath": "/workspace/tests/ThirdWheel.API.IntegrationTests/obj/",
+        "projectPath": "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\ThirdWheel.API.IntegrationTests.csproj",
+        "packagesPath": "C:\\Users\\yasva\\.nuget\\packages\\",
+        "outputPath": "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/workspace/nuget.config",
-          "/tmp/.nuget/NuGet/NuGet.Config"
+          "C:\\Apps\\Triad\\NuGet.Config",
+          "C:\\Users\\yasva\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -578,8 +588,8 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
-              "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj": {
-                "projectPath": "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj"
+              "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj": {
+                "projectPath": "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj"
               }
             }
           }
@@ -639,7 +649,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",

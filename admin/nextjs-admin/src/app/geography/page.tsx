@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchUsers } from '@/lib/api';
+import { fetchAllUsers } from '@/lib/api';
 import { buildGeographyAnalytics } from '@/lib/geography';
 import type { GeographyAnalytics } from '@/lib/geography';
 import { formatPercentage } from '@/lib/format';
@@ -15,9 +15,9 @@ export default function GeographyPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers()
-      .then((users) => {
-        setAnalytics(buildGeographyAnalytics(users));
+    fetchAllUsers()
+      .then((items) => {
+        setAnalytics(buildGeographyAnalytics(items));
         setLoading(false);
       })
       .catch((err: unknown) => {

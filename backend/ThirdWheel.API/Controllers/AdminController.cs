@@ -1,8 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
 using ThirdWheel.API.Data;
 using ThirdWheel.API.DTOs;
 using ThirdWheel.API.Services;
@@ -16,24 +19,66 @@ public class AdminController : BaseController
     private readonly AppDbContext _db;
     private readonly AuthService _authService;
     private readonly VerificationService _verificationService;
+    private readonly IConfiguration _config;
     private const string SeedAdminEmail = "yasvanth@live.in";
 
-    public AdminController(AppDbContext db, AuthService authService, VerificationService verificationService)
+    public AdminController(AppDbContext db, AuthService authService, VerificationService verificationService, IConfiguration config)
     {
         _db = db;
         _authService = authService;
         _verificationService = verificationService;
+        _config = config;
+    }
+
+    // POST /api/admin/auth/login
+    [AllowAnonymous]
+    [HttpPost("auth/login")]
+    public async Task<IActionResult> AdminLogin([FromBody] AdminLoginRequest req)
+    {
+        var admin = await _db.AdminUsers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Username == req.Username);
+
+        if (admin == null || !BCrypt.Net.BCrypt.Verify(req.Password, admin.PasswordHash))
+            return Unauthorized(new { error = "Invalid credentials." });
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
+            new Claim("username", admin.Username),
+            new Claim(ClaimTypes.Role, AppRoles.Admin)
+        };
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var jwt = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(AppConstants.TokenExpiryDays),
+            signingCredentials: creds
+        );
+
+        return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(jwt) });
     }
 
     // GET /api/admin/users
     // Admin-safe list view with coarse profile and moderation signals only.
     [AllowAnonymous]
     [HttpGet("users")]
-    public async Task<IActionResult> ListUsers()
+    public async Task<IActionResult> ListUsers([FromQuery] int skip = 0, [FromQuery] int take = 50)
     {
-        var users = await _db.Users
+        skip = Math.Max(0, skip);
+        take = Math.Clamp(take, 1, 200);
+
+        var baseQuery = _db.Users
             .AsNoTracking()
-            .OrderByDescending(u => u.CreatedAt)
+            .OrderByDescending(u => u.CreatedAt);
+
+        var total = await baseQuery.CountAsync();
+        var totalSingles = await _db.Users.AsNoTracking().CountAsync(u => !u.CoupleId.HasValue);
+        var totalCouples = await _db.Users.AsNoTracking().CountAsync(u => u.CoupleId.HasValue);
+
+        var users = await baseQuery
             .Select(u => new
             {
                 u.Id,
@@ -43,12 +88,14 @@ public class AdminController : BaseController
                 u.City,
                 u.State
             })
+            .Skip(skip)
+            .Take(take)
             .ToListAsync();
 
-        if (users.Count == 0)
-            return Ok(Array.Empty<object>());
-
         var userIds = users.Select(u => u.Id).ToArray();
+
+        if (userIds.Length == 0)
+            return Ok(new { items = Array.Empty<object>(), total, skip, take });
 
         var blockCounts = await _db.Blocks
             .AsNoTracking()
@@ -81,7 +128,7 @@ public class AdminController : BaseController
                 x => x.UserId,
                 x => new { x.Total, x.Verified, x.Pending });
 
-        return Ok(users.Select(u =>
+        var items = users.Select(u =>
         {
             blockCounts.TryGetValue(u.Id, out var blockCount);
             reportCounts.TryGetValue(u.Id, out var reportCount);
@@ -104,7 +151,9 @@ public class AdminController : BaseController
                 city = NormalizeGeographyValue(u.City),
                 state = NormalizeGeographyValue(u.State)
             };
-        }));
+        }).ToList<object>();
+
+        return Ok(new { items, total, totalSingles, totalCouples, skip, take });
     }
 
     // GET /api/admin/online-users

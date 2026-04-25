@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<UserPhoto> UserPhotos => Set<UserPhoto>();
     public DbSet<UserVideo> UserVideos => Set<UserVideo>();
     public DbSet<UserInterest> UserInterests => Set<UserInterest>();
@@ -49,6 +50,12 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // AdminUser
+        modelBuilder.Entity<AdminUser>(e =>
+        {
+            e.HasIndex(a => a.Username).IsUnique();
+        });
 
         // User
         modelBuilder.Entity<User>(e =>
@@ -174,6 +181,7 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasIndex(b => new { b.BlockerUserId, b.BlockedUserId }).IsUnique();
+            e.HasIndex(b => b.BlockedUserId);
         });
 
         // Report
@@ -192,6 +200,7 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(s => new { s.UserId, s.CreatedAt });
         });
 
         // Round coordinates to ~1km grid for privacy

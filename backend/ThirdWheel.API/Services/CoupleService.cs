@@ -12,6 +12,32 @@ public class CoupleService
 
     public CoupleService(AppDbContext db) => _db = db;
 
+    public async Task<CoupleStatusResponse> GetCoupleStatusAsync(Guid userId)
+    {
+        var user = await _db.Users.FindAsync(userId)
+            ?? throw new KeyNotFoundException("User not found.");
+
+        if (user.CoupleId == null)
+            return new CoupleStatusResponse(null, null, false, null, null);
+
+        var couple = await _db.Couples
+            .Include(c => c.Members)
+            .FirstOrDefaultAsync(c => c.Id == user.CoupleId);
+
+        if (couple == null)
+            return new CoupleStatusResponse(null, null, false, null, null);
+
+        var partner = couple.Members.FirstOrDefault(m => m.Id != userId);
+
+        return new CoupleStatusResponse(
+            couple.Id,
+            couple.InviteCode,
+            couple.IsComplete,
+            partner?.Username,
+            partner?.Id
+        );
+    }
+
     public async Task<CreateCoupleResponse> CreateCoupleAsync(Guid userId)
     {
         using var activity = Telemetry.ActivitySource.StartActivity("couple.create");

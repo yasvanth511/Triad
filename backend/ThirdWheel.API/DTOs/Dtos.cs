@@ -14,6 +14,11 @@ public record LoginRequest(
     [Required] string Password
 );
 
+public record AdminLoginRequest(
+    [Required, MaxLength(50)] string Username,
+    [Required] string Password
+);
+
 public record AuthResponse(string Token, UserProfileResponse User);
 
 // Profile
@@ -103,6 +108,13 @@ public record UploadVideoBioResponse(string Url);
 // Couple
 public record CreateCoupleResponse(Guid CoupleId, string InviteCode);
 public record JoinCoupleRequest([Required, MaxLength(20)] string InviteCode);
+public record CoupleStatusResponse(
+    Guid? CoupleId,
+    string? InviteCode,
+    bool IsComplete,
+    string? PartnerName,
+    Guid? PartnerUserId
+);
 
 // Discovery
 public record DiscoveryCardResponse(

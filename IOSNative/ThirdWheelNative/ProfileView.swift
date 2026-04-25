@@ -795,6 +795,7 @@ private struct ProfileEditView: View {
                 photosCard
                 highlightsCard
                 bioCard
+                CoupleLinkCard()
                 preferencesCard
                 locationCard
                 basicsCard

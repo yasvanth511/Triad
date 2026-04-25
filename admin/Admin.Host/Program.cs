@@ -61,7 +61,7 @@ static string ResolveApiBaseUrl(IConfiguration configuration, IWebHostEnvironmen
 
     return environment.IsDevelopment()
         ? "http://localhost:5127"
-        : "http://api:5000";
+        : "http://triad-backend:5000";
 }
 
 static HttpRequestMessage CreateProxyRequest(HttpContext context, string apiBaseUrl, string? path)

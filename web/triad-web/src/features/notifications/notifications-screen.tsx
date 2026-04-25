@@ -18,6 +18,7 @@ export function NotificationsScreen() {
     queryKey: ["notifications", token],
     queryFn: () => getNotifications(token!),
     enabled: Boolean(token),
+    staleTime: 15_000,
   });
 
   const markOneMutation = useMutation({

@@ -1,6 +1,7 @@
 services:
-  api:
-    image: ${DOCKER_IMAGE_NAME:-triad-api}:${DOCKER_IMAGE_TAG:-dev}
+  triad-backend:
+    container_name: triad-backend
+    image: ${DOCKER_IMAGE_NAME:-triad-backend}:${DOCKER_IMAGE_TAG:-dev}
     build:
       context: ./backend/ThirdWheel.API
       dockerfile: Dockerfile
@@ -13,19 +14,23 @@ services:
     networks:
       - ipv6net
 
-  admin:
+  triad-admin:
+    container_name: triad-admin
     image: ${ADMIN_IMAGE_NAME:-triad-admin}:${ADMIN_IMAGE_TAG:-dev}
     build:
       context: ./admin
       dockerfile: Dockerfile
     depends_on:
-      - api
+      - triad-backend
+    environment:
+      Admin__ApiBaseUrl: ${ADMIN_API_BASE_URL:-http://triad-backend:5000}
     ports:
       - "${ADMIN_PORT:-5173}:80"
     networks:
       - ipv6net
 
-  web:
+  triad-web:
+    container_name: triad-web
     image: ${WEB_IMAGE_NAME:-triad-web}:${WEB_IMAGE_TAG:-dev}
     build:
       context: ./web/triad-web
@@ -33,7 +38,7 @@ services:
       args:
         NEXT_PUBLIC_API_ORIGIN: ${WEB_PUBLIC_API_ORIGIN:-http://localhost:5127}
     depends_on:
-      - api
+      - triad-backend
     environment:
       NEXT_PUBLIC_API_ORIGIN: ${WEB_PUBLIC_API_ORIGIN:-http://localhost:5127}
       PORT: 3000
@@ -44,6 +49,7 @@ services:
       - ipv6net
 
   triad-business:
+    container_name: triad-business
     image: ${BUSINESS_IMAGE_NAME:-triad-business}:${BUSINESS_IMAGE_TAG:-dev}
     build:
       context: ./web/triad-business
@@ -51,7 +57,7 @@ services:
       args:
         NEXT_PUBLIC_API_ORIGIN: ${BUSINESS_PUBLIC_API_ORIGIN:-http://localhost:5127}
     depends_on:
-      - api
+      - triad-backend
     environment:
       NEXT_PUBLIC_API_ORIGIN: ${BUSINESS_PUBLIC_API_ORIGIN:-http://localhost:5127}
       PORT: 3002
@@ -61,8 +67,9 @@ services:
     networks:
       - ipv6net
 
-  triad-site:
-    image: ${SITE_IMAGE_NAME:-triad-site}:${SITE_IMAGE_TAG:-dev}
+  triad-marketing:
+    container_name: triad-marketing
+    image: ${SITE_IMAGE_NAME:-triad-marketing}:${SITE_IMAGE_TAG:-dev}
     build:
       context: ./web/triad-site
       dockerfile: Dockerfile

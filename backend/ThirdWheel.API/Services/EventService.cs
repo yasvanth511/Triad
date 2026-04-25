@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ThirdWheel.API.Data;
 using ThirdWheel.API.DTOs;
 using ThirdWheel.API.Helpers;
@@ -9,11 +10,18 @@ namespace ThirdWheel.API.Services;
 public class EventService
 {
     private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
 
-    public EventService(AppDbContext db) => _db = db;
-
-    public async Task<List<EventResponse>> GetEventsAsync(Guid userId)
+    public EventService(AppDbContext db, IMemoryCache cache)
     {
+        _db = db;
+        _cache = cache;
+    }
+
+    public async Task<List<EventResponse>> GetEventsAsync(Guid userId, int skip = 0, int take = 50)
+    {
+        take = Math.Min(take, 100);
+
         using var activity = Telemetry.ActivitySource.StartActivity("events.get");
         activity?.SetTag("enduser.id", userId);
 
@@ -26,15 +34,43 @@ public class EventService
 
             var now = DateTime.UtcNow;
 
-            var events = await _db.Events
+            var query = _db.Events
                 .AsNoTracking()
-                .Include(e => e.Interests)
-                .Where(e => e.EventDate >= now)
+                .Where(e => e.EventDate >= now);
+
+            if (user.RadiusMiles.HasValue && user.Latitude.HasValue && user.Longitude.HasValue)
+            {
+                double radiusKm = GeoUtils.MilesToKilometres(user.RadiusMiles.Value);
+                double latDelta = radiusKm / 111.0;
+                double lonDelta = radiusKm /
+                    (111.0 * Math.Cos(user.Latitude.Value * Math.PI / 180.0));
+
+                double latMin = user.Latitude.Value - latDelta;
+                double latMax = user.Latitude.Value + latDelta;
+                double lonMin = user.Longitude.Value - lonDelta;
+                double lonMax = user.Longitude.Value + lonDelta;
+
+                query = query.Where(e =>
+                    e.Latitude.HasValue && e.Longitude.HasValue &&
+                    e.Latitude  >= (double?)latMin && e.Latitude  <= (double?)latMax &&
+                    e.Longitude >= (double?)lonMin && e.Longitude <= (double?)lonMax);
+            }
+
+            var rows = await query
                 .OrderBy(e => e.EventDate)
+                .Select(e => new
+                {
+                    Event = e,
+                    InterestedCount = e.Interests.Count(),
+                    IsInterested = e.Interests.Any(i => i.UserId == userId)
+                })
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync();
 
-            var response = events.Select(e =>
+            var response = rows.Select(row =>
             {
+                var e = row.Event;
                 double? distanceKm = null;
                 if (user.Latitude.HasValue && user.Longitude.HasValue
                     && e.Latitude.HasValue && e.Longitude.HasValue)
@@ -44,20 +80,15 @@ public class EventService
                                              e.Latitude.Value, e.Longitude.Value), 1);
                 }
 
-                if (user.RadiusMiles.HasValue && distanceKm.HasValue)
-                {
-                    if (distanceKm.Value > GeoUtils.MilesToKilometres(user.RadiusMiles.Value))
-                        return null;
-                }
-
-                var interestedCount = e.Interests.Count;
-                var isInterested = e.Interests.Any(i => i.UserId == userId);
+                if (user.RadiusMiles.HasValue && distanceKm.HasValue
+                    && distanceKm.Value > GeoUtils.MilesToKilometres(user.RadiusMiles.Value))
+                    return null;
 
                 return new EventResponse(
                     e.Id, e.Title, e.Description, e.BannerUrl,
                     e.EventDate, e.City, e.State, e.Venue,
                     e.Latitude, e.Longitude, distanceKm,
-                    interestedCount, isInterested);
+                    row.InterestedCount, row.IsInterested);
             }).Where(e => e != null).Cast<EventResponse>().ToList();
 
             Telemetry.EventOperations.Add(1,
@@ -146,6 +177,7 @@ public class EventService
             };
             _db.Events.Add(ev);
             await _db.SaveChangesAsync();
+            _cache.Remove("events:upcoming");
             Telemetry.EventOperations.Add(1,
                 new KeyValuePair<string, object?>("operation", "create"),
                 new KeyValuePair<string, object?>("outcome", "success"));
@@ -185,6 +217,7 @@ public class EventService
 
             _db.Events.Remove(ev);
             await _db.SaveChangesAsync();
+            _cache.Remove("events:upcoming");
             Telemetry.EventOperations.Add(1,
                 new KeyValuePair<string, object?>("operation", "delete"),
                 new KeyValuePair<string, object?>("outcome", "success"));

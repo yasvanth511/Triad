@@ -234,6 +234,19 @@ export interface VerificationListResponse {
   methods: VerificationMethod[];
 }
 
+export interface CoupleStatus {
+  coupleId: UUID | null;
+  inviteCode: string | null;
+  isComplete: boolean;
+  partnerName: string | null;
+  partnerUserId: UUID | null;
+}
+
+export interface CreateCoupleResponse {
+  coupleId: UUID;
+  inviteCode: string;
+}
+
 export interface UpdateProfileRequest {
   bio?: string;
   ageMin?: number;

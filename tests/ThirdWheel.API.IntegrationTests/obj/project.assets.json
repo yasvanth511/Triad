@@ -3606,20 +3606,26 @@
     ]
   },
   "packageFolders": {
-    "/tmp/nuget": {}
+    "C:\\Users\\yasva\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/workspace/tests/ThirdWheel.API.IntegrationTests/ThirdWheel.API.IntegrationTests.csproj",
+      "projectUniqueName": "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\ThirdWheel.API.IntegrationTests.csproj",
       "projectName": "ThirdWheel.API.IntegrationTests",
-      "projectPath": "/workspace/tests/ThirdWheel.API.IntegrationTests/ThirdWheel.API.IntegrationTests.csproj",
-      "packagesPath": "/tmp/nuget",
-      "outputPath": "/workspace/tests/ThirdWheel.API.IntegrationTests/obj/",
+      "projectPath": "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\ThirdWheel.API.IntegrationTests.csproj",
+      "packagesPath": "C:\\Users\\yasva\\.nuget\\packages\\",
+      "outputPath": "C:\\Apps\\Triad\\tests\\ThirdWheel.API.IntegrationTests\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "/workspace/nuget.config",
-        "/tmp/.nuget/NuGet/NuGet.Config"
+        "C:\\Apps\\Triad\\NuGet.Config",
+        "C:\\Users\\yasva\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -3631,8 +3637,8 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj": {
-              "projectPath": "/workspace/backend/ThirdWheel.API/ThirdWheel.API.csproj"
+            "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj": {
+              "projectPath": "C:\\Apps\\Triad\\backend\\ThirdWheel.API\\ThirdWheel.API.csproj"
             }
           }
         }
@@ -3692,7 +3698,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.203/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -3977,6 +3983,16 @@
       "warningLevel": 1,
       "message": "ThirdWheel.API depends on OpenTelemetry.Instrumentation.EntityFrameworkCore (>= 1.12.0-beta.4) but OpenTelemetry.Instrumentation.EntityFrameworkCore 1.12.0-beta.4 was not found. OpenTelemetry.Instrumentation.EntityFrameworkCore 1.13.0-beta.1 was resolved instead.",
       "libraryId": "OpenTelemetry.Instrumentation.EntityFrameworkCore",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    },
+    {
+      "code": "NU1902",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'OpenTelemetry.Api' 1.13.1 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-g94r-2vxg-569j",
+      "libraryId": "OpenTelemetry.Api",
       "targetGraphs": [
         "net10.0"
       ]

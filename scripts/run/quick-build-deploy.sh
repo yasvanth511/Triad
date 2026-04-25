@@ -23,23 +23,23 @@ log_layer() {
 }
 
 run_backend() {
-  log_layer "backend"
-  "$ROOT_DIR/scripts/docker.sh" up
+  log_layer "triad-backend"
+  "$ROOT_DIR/scripts/docker.sh" up triad-backend
 }
 
 run_site() {
-  log_layer "triad-site"
-  "$ROOT_DIR/scripts/docker.sh" up triad-site
+  log_layer "triad-marketing"
+  "$ROOT_DIR/scripts/docker.sh" up triad-marketing
 }
 
 run_admin() {
-  log_layer "admin"
-  "$ROOT_DIR/scripts/docker.sh" up admin
+  log_layer "triad-admin"
+  "$ROOT_DIR/scripts/docker.sh" up triad-admin
 }
 
 run_web() {
-  log_layer "web"
-  "$ROOT_DIR/scripts/docker.sh" up web
+  log_layer "triad-web"
+  "$ROOT_DIR/scripts/docker.sh" up triad-web
 }
 
 run_business() {

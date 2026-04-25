@@ -8,28 +8,84 @@ import StateCard from '@/components/StateCard';
 import StatusPill from '@/components/StatusPill';
 import UserDetailDrawer from '@/components/UserDetailDrawer';
 
+const PAGE_SIZE = 50;
+
 const TH = 'px-3 py-3.5 border-b border-[#d9e0ec] text-left text-xs font-semibold tracking-[0.04em] uppercase text-[#667085]';
 const TD = 'px-3 py-3.5 border-b border-[#d9e0ec] align-top';
 
-function UserStats({ users }: { users: UserSummary[] }) {
-  const couples = users.filter((u) => u.profileType === 'couple').length;
+function UserStats({
+  total,
+  totalSingles,
+  totalCouples,
+}: {
+  total: number;
+  totalSingles: number;
+  totalCouples: number;
+}) {
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
       <MetricCard
         label="Total Users"
-        value={users.length}
+        value={total}
         description="All users returned by the admin API."
       />
       <MetricCard
         label="Singles"
-        value={users.length - couples}
+        value={totalSingles}
         description="Profiles not linked to a couple."
       />
       <MetricCard
         label="Couples"
-        value={couples}
+        value={totalCouples}
         description="Users currently linked to a couple profile."
       />
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  total,
+  pageSize,
+  onPage,
+}: {
+  page: number;
+  total: number;
+  pageSize: number;
+  onPage: (p: number) => void;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
+  if (totalPages <= 1) return null;
+
+  const from = page * pageSize + 1;
+  const to = Math.min((page + 1) * pageSize, total);
+
+  return (
+    <div className="flex items-center justify-between px-1 pt-2">
+      <span className="text-sm text-[#667085]">
+        {from}–{to} of {total.toLocaleString()}
+      </span>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={page === 0}
+          onClick={() => onPage(page - 1)}
+          className="border border-[#d9e0ec] rounded-[10px] bg-white text-[#1d4ed8] px-3 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#dbeafe]"
+        >
+          Previous
+        </button>
+        <span className="flex items-center px-3 text-sm text-[#667085]">
+          Page {page + 1} / {totalPages}
+        </span>
+        <button
+          type="button"
+          disabled={(page + 1) * pageSize >= total}
+          onClick={() => onPage(page + 1)}
+          className="border border-[#d9e0ec] rounded-[10px] bg-white text-[#1d4ed8] px-3 py-2 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#dbeafe]"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }
@@ -99,27 +155,36 @@ function UsersTable({
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserSummary[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalSingles, setTotalSingles] = useState(0);
+  const [totalCouples, setTotalCouples] = useState(0);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
 
   useEffect(() => {
-    fetchUsers()
+    setLoading(true);
+    setError(null);
+    fetchUsers(page * PAGE_SIZE, PAGE_SIZE)
       .then((data) => {
-        setUsers(data);
+        setUsers(data.items);
+        setTotal(data.total);
+        setTotalSingles(data.totalSingles);
+        setTotalCouples(data.totalCouples);
         setLoading(false);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'The admin API request failed.');
         setLoading(false);
       });
-  }, []);
+  }, [page]);
 
   const selectedUser = selectedId != null ? users.find((u) => u.id === selectedId) : undefined;
 
   return (
     <div className="grid gap-4">
-      <UserStats users={users} />
+      <UserStats total={total} totalSingles={totalSingles} totalCouples={totalCouples} />
 
       {loading && (
         <StateCard title="Loading users" body="Fetching the latest admin user summary." />
@@ -137,7 +202,10 @@ export default function UsersPage() {
               : undefined
           }
         >
-          <UsersTable users={users} onView={setSelectedId} />
+          <div className="grid gap-3">
+            <UsersTable users={users} onView={setSelectedId} />
+            <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
+          </div>
           {selectedId != null && (
             <UserDetailDrawer
               userId={selectedId}

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ThirdWheel.API.Data;
 using ThirdWheel.API.Models;
 
@@ -8,12 +9,17 @@ namespace ThirdWheel.API.Services;
 public partial class AntiSpamService
 {
     private readonly AppDbContext _db;
+    private readonly IMemoryCache _cache;
 
     // Blocked keywords (case-insensitive)
     private static readonly string[] SpamKeywords =
         ["onlyfans", "of link", "telegram", "cashapp", "cash app", "venmo", "paypal", "snapchat"];
 
-    public AntiSpamService(AppDbContext db) => _db = db;
+    public AntiSpamService(AppDbContext db, IMemoryCache cache)
+    {
+        _db = db;
+        _cache = cache;
+    }
 
     public async Task CheckMessageAsync(Guid userId, Guid matchId, string content, bool? isUserBanned = null)
     {
@@ -55,18 +61,13 @@ public partial class AntiSpamService
                 await HandleSpamDetection(userId, $"Keyword detected: {detectedKeyword}");
             }
 
-            // Count identical messages at the DB level — avoids pulling all message
-            // content into memory on every send.
-            var cutoff = DateTime.UtcNow.AddMinutes(-AppConstants.RepeatedMessageWindowMinutes);
-            var repeatedCount = await _db.Messages
-                .CountAsync(m => m.SenderId == userId
-                              && m.SentAt > cutoff
-                              && m.Content == content);
-
-            if (repeatedCount >= AppConstants.RepeatedMessageThreshold)
+            var contentHash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(content)));
+            var cacheKey = $"antispam:recent:{userId}:{contentHash}";
+            if (_cache.TryGetValue(cacheKey, out int repeatCount) && repeatCount >= AppConstants.RepeatedMessageThreshold)
             {
                 await HandleSpamDetection(userId, "Repeated messages detected");
             }
+            _cache.Set(cacheKey, (repeatCount) + 1, TimeSpan.FromMinutes(AppConstants.RepeatedMessageWindowMinutes));
 
             Telemetry.MarkSuccess(activity);
         }

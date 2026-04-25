@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ThirdWheel.API.UnitTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eab8e05d68bc23c196bfe5b2e7b106f8606c8137")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ea8d063ec81c8fad1309d0dc2413bd6be57a05a")]
 [assembly: System.Reflection.AssemblyProductAttribute("ThirdWheel.API.UnitTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ThirdWheel.API.UnitTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
