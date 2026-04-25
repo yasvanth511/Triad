@@ -329,6 +329,22 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx =>
     {
         ctx.Context.Response.Headers["Cache-Control"] = "public, max-age=86400";
+
+        // Static-file middleware bypasses the CORS policy registered above, so mirror
+        // the same allow-list here. Without this, browsers can block cross-origin
+        // <img> requests that get tagged with crossorigin (canvas, srcset, fetch loaders).
+        var origin = ctx.Context.Request.Headers["Origin"].ToString();
+        if (string.IsNullOrEmpty(origin))
+        {
+            return;
+        }
+
+        var allowAny = app.Environment.IsDevelopment() || corsOrigins.Length == 0;
+        if (allowAny || corsOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+        {
+            ctx.Context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+            ctx.Context.Response.Headers["Vary"] = "Origin";
+        }
     }
 });
 

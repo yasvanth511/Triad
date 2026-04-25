@@ -30,8 +30,8 @@ export function ProfilePreviewCard({
       : profile.interests.filter((interest) => viewerRedFlags.has(interest.toLowerCase())).length;
 
   return (
-    <Card className="space-y-4">
-      <Link href={href} className="space-y-4">
+    <Card className="space-y-5">
+      <Link href={href} className="block space-y-5">
         <div className="h-64 overflow-hidden rounded-[24px]">
           <MediaFrame src={profile.photos[0]?.url} alt={profile.username} className="transition duration-300 hover:scale-[1.02]" />
         </div>

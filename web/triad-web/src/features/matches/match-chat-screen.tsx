@@ -177,13 +177,13 @@ export function MatchChatScreen({ matchId }: { matchId: string }) {
             placeholder="Send a message"
             autoComplete="off"
             enterKeyHint="send"
-            className="h-14 flex-1 text-base placeholder:text-base sm:h-12 sm:text-sm sm:placeholder:text-sm"
+            className="h-14 flex-1 rounded-[20px] border-2 px-5 text-base placeholder:text-base"
           />
           <Button
             type="submit"
             size="lg"
             disabled={sendMutation.isPending || !draft.trim()}
-            className="h-14 w-full sm:h-12 sm:w-auto"
+            className="h-14 w-full sm:w-auto sm:px-7"
           >
             <Send className="size-5 shrink-0" aria-hidden="true" />
             <span>Send</span>
