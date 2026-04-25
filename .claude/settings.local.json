@@ -9,7 +9,17 @@
       "Bash(npm install *)",
       "Bash(npx skills *)",
       "Bash(bash scripts/docker/docker.sh down)",
-      "Bash(bash redeploy.sh --backend)"
+      "Bash(bash redeploy.sh --backend)",
+      "Read(//usr/local/share/**)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/yasvanthudayakumar/.dotnet/**)",
+      "Bash(command -v dotnet)",
+      "Bash(export PATH=\"$PATH:/usr/local/share/dotnet:$HOME/.dotnet\")",
+      "Bash(export DOTNET_ROOT=/usr/local/share/dotnet)",
+      "Bash(export PATH=\"$DOTNET_ROOT:$PATH\")",
+      "Bash(/usr/local/share/dotnet/dotnet --version)",
+      "Bash(/usr/local/share/dotnet/dotnet build *)",
+      "Bash(/Users/yasvanthudayakumar/.dotnet/dotnet --version)"
     ]
   }
 }

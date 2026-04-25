@@ -534,9 +534,14 @@ The backend is instrumented with OpenTelemetry for:
 
 Console exporters are enabled in development, and OTLP exporters activate when OTLP endpoint variables are present.
 
+## Architecture Roadmap
+
+`plan.md` in the repo root contains a full microservice migration plan using a strangler-fig approach. It defines a YARP API gateway, per-domain ASP.NET services, RabbitMQ event bus, Redis-backed presence tracking, and a final PostgreSQL schema separation phase. All phases are currently unstarted — the backend remains a single monolith today.
+
 ## Notes
 
-- `Product.md` is the product-facing companion to this README.
+- `Product.md` is the product-facing companion to this README. It includes user flow diagrams for every feature.
+- `plan.md` contains the microservice migration roadmap; it is a forward-looking plan and not current architecture.
 - Swagger does not list the SignalR hub because `/hubs/chat` is not a REST endpoint.
 - The admin endpoints intentionally return admin-safe summaries, not raw private profile artifacts.
 

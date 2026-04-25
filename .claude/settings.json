@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export DOTNET_ROOT=/Users/yasvanthudayakumar/.dotnet)",
+      "Bash(/Users/yasvanthudayakumar/.dotnet/dotnet build *)",
+      "Bash(/Users/yasvanthudayakumar/.dotnet/dotnet test *)",
+      "Bash(git stash *)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

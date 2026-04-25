@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ThirdWheel.API.IntegrationTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ea8d063ec81c8fad1309d0dc2413bd6be57a05a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+365db31fe9fd0ad7c1c0a6987bf80198943109b2")]
 [assembly: System.Reflection.AssemblyProductAttribute("ThirdWheel.API.IntegrationTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ThirdWheel.API.IntegrationTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

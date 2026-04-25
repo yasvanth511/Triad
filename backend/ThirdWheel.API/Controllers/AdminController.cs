@@ -13,7 +13,7 @@ using ThirdWheel.API.Services.Verification;
 
 namespace ThirdWheel.API.Controllers;
 
-[Authorize]
+[Authorize(Policy = AppPolicies.Admin)]
 public class AdminController : BaseController
 {
     private readonly AppDbContext _db;
@@ -63,7 +63,6 @@ public class AdminController : BaseController
 
     // GET /api/admin/users
     // Admin-safe list view with coarse profile and moderation signals only.
-    [AllowAnonymous]
     [HttpGet("users")]
     public async Task<IActionResult> ListUsers([FromQuery] int skip = 0, [FromQuery] int take = 50)
     {
@@ -158,7 +157,6 @@ public class AdminController : BaseController
 
     // GET /api/admin/online-users
     // Admin-safe list view for users with an active realtime connection only.
-    [AllowAnonymous]
     [HttpGet("online-users")]
     public async Task<IActionResult> ListOnlineUsers()
     {
@@ -225,7 +223,6 @@ public class AdminController : BaseController
 
     // GET /api/admin/moderation-analytics
     // Admin-safe aggregate moderation summary only.
-    [AllowAnonymous]
     [HttpGet("moderation-analytics")]
     public async Task<IActionResult> GetModerationAnalytics()
     {
@@ -296,7 +293,6 @@ public class AdminController : BaseController
 
     // GET /api/admin/users/{userId}
     // Admin-safe detail view with coarse moderation and verification summaries only.
-    [AllowAnonymous]
     [HttpGet("users/{userId:guid}")]
     public async Task<IActionResult> GetUserDetail(Guid userId)
     {
