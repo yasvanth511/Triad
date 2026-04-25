@@ -103,10 +103,7 @@ export function DiscoverScreen() {
 
   return (
     <div className="space-y-5">
-      <ScreenHeader
-        title="Discover"
-        description="The web feed keeps the same Triad browsing rhythm: audience filter, profile depth, skip, save, like, and a path into richer detail."
-      />
+      <ScreenHeader title="Discover" />
 
       <div className="glass-panel rounded-[28px] p-5">
         <p className="mb-3 text-sm font-semibold text-[var(--color-ink)]">Audience</p>
@@ -192,18 +189,34 @@ function ActionRow({
   const isWorking = loadingId === card.userId;
 
   return (
-    <div className="flex items-center gap-3">
-      <Button variant="secondary" size="sm" onClick={onSkip}>
-        <X className="size-4" />
-        Skip
+    <div className="flex w-full items-center gap-2 sm:gap-3">
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={onSkip}
+        className="flex-1 whitespace-nowrap"
+      >
+        <X className="size-4 shrink-0" aria-hidden="true" />
+        <span>Skip</span>
       </Button>
-      <Button variant="outline" size="sm" onClick={onSave} disabled={isWorking}>
-        <Bookmark className="size-4" />
-        Save
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onSave}
+        disabled={isWorking}
+        className="flex-1 whitespace-nowrap"
+      >
+        <Bookmark className="size-4 shrink-0" aria-hidden="true" />
+        <span>Save</span>
       </Button>
-      <Button size="sm" onClick={onLike} disabled={isWorking}>
-        <Heart className="size-4" />
-        Like
+      <Button
+        size="sm"
+        onClick={onLike}
+        disabled={isWorking}
+        className="flex-1 whitespace-nowrap"
+      >
+        <Heart className="size-4 shrink-0" aria-hidden="true" />
+        <span>Like</span>
       </Button>
     </div>
   );

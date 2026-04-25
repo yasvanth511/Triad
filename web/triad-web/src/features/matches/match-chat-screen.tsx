@@ -117,7 +117,7 @@ export function MatchChatScreen({ matchId }: { matchId: string }) {
         </Button>
       </Card>
 
-      <Card className="space-y-4">
+      <Card className="space-y-5">
         <div className="space-y-3">
           {messagesQuery.data?.length ? (
             messagesQuery.data.map((message) => {
@@ -147,12 +147,17 @@ export function MatchChatScreen({ matchId }: { matchId: string }) {
               );
             })
           ) : (
-            <EmptyState title="No messages yet" message="Say hi to start the conversation." />
+            <div className="space-y-1 rounded-[20px] bg-white/55 px-4 py-5 text-center">
+              <p className="text-base font-semibold text-[var(--color-ink)]">No messages yet</p>
+              <p className="text-sm leading-6 text-[var(--color-muted-ink)]">
+                Say hi to start the conversation.
+              </p>
+            </div>
           )}
         </div>
 
         <form
-          className="flex flex-col gap-3 sm:flex-row"
+          className="flex flex-col gap-3 border-t border-white/60 pt-4 sm:flex-row sm:items-center"
           onSubmit={(event) => {
             event.preventDefault();
             const trimmedDraft = draft.trim();
@@ -162,15 +167,26 @@ export function MatchChatScreen({ matchId }: { matchId: string }) {
             sendMutation.mutate(trimmedDraft);
           }}
         >
+          <label htmlFor="chat-message-input" className="sr-only">
+            Message
+          </label>
           <Input
+            id="chat-message-input"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Send a message"
-            className="flex-1"
+            autoComplete="off"
+            enterKeyHint="send"
+            className="h-14 flex-1 text-base placeholder:text-base sm:h-12 sm:text-sm sm:placeholder:text-sm"
           />
-          <Button disabled={sendMutation.isPending || !draft.trim()}>
-            <Send className="size-4" />
-            Send
+          <Button
+            type="submit"
+            size="lg"
+            disabled={sendMutation.isPending || !draft.trim()}
+            className="h-14 w-full sm:h-12 sm:w-auto"
+          >
+            <Send className="size-5 shrink-0" aria-hidden="true" />
+            <span>Send</span>
           </Button>
         </form>
       </Card>

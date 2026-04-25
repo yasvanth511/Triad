@@ -41,12 +41,7 @@ export function AppShell({ children }: PropsWithChildren) {
       <div className="screen-wrap grid gap-6 py-5 lg:grid-cols-[268px_minmax(0,1fr)] lg:py-8">
         <aside className="glass-panel sticky top-6 hidden self-start rounded-[30px] p-5 lg:block">
           <div className="space-y-6">
-            <div className="space-y-2">
-              <LogoWordmark className="block" />
-              <p className="text-sm leading-6 text-[var(--color-muted-ink)] break-words">
-                Couple-aware discovery, softer intent, and the same Triad feel adapted for web.
-              </p>
-            </div>
+            <LogoWordmark className="block" />
 
             <nav className="space-y-2">
               {primaryNav.map((item) => (
@@ -74,12 +69,12 @@ export function AppShell({ children }: PropsWithChildren) {
               </div>
             </div>
 
-            <div className="rounded-[24px] bg-[linear-gradient(135deg,rgba(124,77,255,0.10),rgba(219,38,119,0.10))] p-4">
-              <div className="flex items-center gap-3">
+            <div className="overflow-hidden rounded-[24px] bg-[linear-gradient(135deg,rgba(124,77,255,0.10),rgba(219,38,119,0.10))] p-4">
+              <div className="flex min-w-0 items-center gap-3">
                 <Avatar
                   src={currentUser?.photos[0]?.url}
                   alt={currentUser?.username || "You"}
-                  className="shrink-0"
+                  className="size-11 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-[var(--color-ink)]">

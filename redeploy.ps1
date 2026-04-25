@@ -1,12 +1,20 @@
+[CmdletBinding()]
+param(
+    [Parameter(Position = 0)]
+    [string]$Target = "all",
+    [switch]$NoCache,
+    [switch]$Clean
+)
+
 $ErrorActionPreference = "Stop"
 
-$target = if ($args.Count -gt 0) { $args[0].ToLower() } else { "all" }
-
 $validTargets = @("backend", "site", "admin", "web", "business", "ios", "all")
+$Target = $Target.ToLower()
 
-if ($validTargets -notcontains $target) {
-    Write-Host "Invalid target: $target" -ForegroundColor Red
+if ($validTargets -notcontains $Target) {
+    Write-Host "Invalid target: $Target" -ForegroundColor Red
     Write-Host "Valid targets: $($validTargets -join ', ')"
+    Write-Host "Flags: -NoCache (force fresh image build), -Clean (wipe local .next before build)"
     exit 1
 }
 
@@ -18,6 +26,22 @@ function Assert-DockerRunning {
     }
 }
 
+function Clear-NextBuildCache {
+    param([string]$ServiceName)
+
+    $nextDir = switch ($ServiceName) {
+        "triad-web"       { "web/triad-web/.next" }
+        "triad-business"  { "web/triad-business/.next" }
+        "triad-marketing" { "web/triad-site/.next" }
+        default           { $null }
+    }
+
+    if ($nextDir -and (Test-Path $nextDir)) {
+        Write-Host "Removing stale build artifacts: $nextDir" -ForegroundColor DarkGray
+        Remove-Item -Recurse -Force $nextDir
+    }
+}
+
 function Invoke-ServiceDeploy {
     param(
         [string]$ServiceName
@@ -25,7 +49,23 @@ function Invoke-ServiceDeploy {
 
     Write-Host "Redeploying $ServiceName..." -ForegroundColor Cyan
 
-    docker compose up -d --build --remove-orphans $ServiceName
+    if ($Clean) {
+        Clear-NextBuildCache -ServiceName $ServiceName
+    }
+
+    if ($NoCache) {
+        Write-Host "Building $ServiceName with --no-cache..." -ForegroundColor DarkCyan
+        docker compose build --no-cache $ServiceName
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Failed to build $ServiceName" -ForegroundColor Red
+            exit $LASTEXITCODE
+        }
+
+        docker compose up -d --force-recreate --remove-orphans $ServiceName
+    }
+    else {
+        docker compose up -d --build --force-recreate --remove-orphans $ServiceName
+    }
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to redeploy $ServiceName" -ForegroundColor Red
@@ -37,7 +77,7 @@ function Invoke-ServiceDeploy {
 
 Assert-DockerRunning
 
-switch ($target) {
+switch ($Target) {
     "business" {
         Invoke-ServiceDeploy "triad-business"
     }

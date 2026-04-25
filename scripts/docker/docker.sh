@@ -50,6 +50,7 @@ Key env vars:
   DOCKER_ENV_FILE, DOCKER_IMAGE_NAME, DOCKER_IMAGE_TAG
   DOCKER_CONTAINER_NAME, DOCKER_PROJECT_NAME, DOCKER_SERVICE
   DOCKER_BUILD_CONTEXT, DOCKERFILE_PATH, API_PORT, ADMIN_PORT, WEB_PORT, BUSINESS_PORT, SITE_PORT
+  DOCKER_NO_CACHE=1   Force a no-cache image build for up/rebuild/deploy
 EOF
 }
 
@@ -259,8 +260,15 @@ compose_up() {
     ensure_env_file
   fi
   export_runtime_env
-  log "Starting compose service $SERVICE"
-  compose_cmd up -d --build --remove-orphans "$SERVICE"
+  if [[ "${DOCKER_NO_CACHE:-0}" == "1" ]]; then
+    log "Rebuilding $SERVICE without cache"
+    compose_cmd build --no-cache "$SERVICE"
+    log "Starting compose service $SERVICE"
+    compose_cmd up -d --force-recreate --remove-orphans "$SERVICE"
+  else
+    log "Starting compose service $SERVICE"
+    compose_cmd up -d --build --force-recreate --remove-orphans "$SERVICE"
+  fi
 }
 
 compose_down() {
@@ -340,7 +348,12 @@ rebuild_all() {
     fi
     export_runtime_env
     log "Rebuilding compose service $SERVICE"
-    compose_cmd up -d --build --force-recreate "$SERVICE"
+    if [[ "${DOCKER_NO_CACHE:-0}" == "1" ]]; then
+      compose_cmd build --no-cache "$SERVICE"
+      compose_cmd up -d --force-recreate --remove-orphans "$SERVICE"
+    else
+      compose_cmd up -d --build --force-recreate --remove-orphans "$SERVICE"
+    fi
     return 0
   fi
 
@@ -353,7 +366,12 @@ deploy_all() {
     ensure_env_file
     export_runtime_env
     log "Deploying compose stack"
-    compose_cmd up -d --build --remove-orphans
+    if [[ "${DOCKER_NO_CACHE:-0}" == "1" ]]; then
+      compose_cmd build --no-cache
+      compose_cmd up -d --force-recreate --remove-orphans
+    else
+      compose_cmd up -d --build --force-recreate --remove-orphans
+    fi
     return 0
   fi
 
